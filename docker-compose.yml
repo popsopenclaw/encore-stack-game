@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: encore-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-encore_game}
+      POSTGRES_USER: ${POSTGRES_USER:-encore}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-encore}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  valkey:
+    image: valkey/valkey:7.2
+    container_name: encore-valkey
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey_data:/data
+
+  backend:
+    build:
+      context: ./backend/Encore.Api
+      dockerfile: Dockerfile
+    container_name: encore-api
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - valkey
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB:-encore_game};Username=${POSTGRES_USER:-encore};Password=${POSTGRES_PASSWORD:-encore}
+      ConnectionStrings__Valkey: valkey:6379
+      Jwt__Issuer: ${JWT_ISSUER:-encore-api}
+      Jwt__Audience: ${JWT_AUDIENCE:-encore-clients}
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:-CHANGE_ME_SUPER_LONG_SIGNING_KEY_1234567890}
+      GitHubOAuth__ClientId: ${GITHUB_CLIENT_ID}
+      GitHubOAuth__ClientSecret: ${GITHUB_CLIENT_SECRET}
+      GitHubOAuth__RedirectUri: ${GITHUB_REDIRECT_URI}
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:
+  valkey_data:
