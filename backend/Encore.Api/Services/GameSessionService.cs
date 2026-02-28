@@ -8,6 +8,17 @@ public class GameSessionService(IConnectionMultiplexer redis)
 {
     private readonly IDatabase _db = redis.GetDatabase();
 
+
+
+    public async Task SaveStateAsync(string sessionId, string stateJson)
+        => await _db.StringSetAsync(Key(sessionId), stateJson, TimeSpan.FromDays(7));
+
+    public async Task<T?> GetStateAsync<T>(string sessionId)
+    {
+        var value = await _db.StringGetAsync(Key(sessionId));
+        if (!value.HasValue) return default;
+        return System.Text.Json.JsonSerializer.Deserialize<T>(value!);
+    }
     public async Task<GameSession> CreateAsync(Guid ownerAccountId, string? name, string? initialStateJson)
     {
         var session = new GameSession

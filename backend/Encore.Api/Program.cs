@@ -22,6 +22,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<GitHubOAuthService>();
 builder.Services.AddScoped<GameSessionService>();
+builder.Services.AddScoped<EncoreRulesEngine>();
 
 var jwtKey = builder.Configuration["Jwt:SigningKey"] ?? throw new InvalidOperationException("Missing Jwt:SigningKey");
 var issuer = builder.Configuration["Jwt:Issuer"] ?? "encore-api";
