@@ -58,6 +58,16 @@ Optional device argument:
 ./scripts/run-frontend.sh ios
 ```
 
+## Bootstrap a fresh Ubuntu server
+
+Run on the Ubuntu VM:
+
+```bash
+sudo ./scripts/bootstrap-ubuntu.sh <vm-user>
+```
+
+This installs Docker + Compose plugin, rsync, ufw, fail2ban, enables Docker, and adds your user to the docker group.
+
 ## Deploy to Ubuntu VM (Docker)
 
 Use the deploy script:
