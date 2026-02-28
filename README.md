@@ -58,6 +58,25 @@ Optional device argument:
 ./scripts/run-frontend.sh ios
 ```
 
+## Deploy to Ubuntu VM (Docker)
+
+Use the deploy script:
+
+```bash
+./scripts/deploy-vm.sh user@your-vm-ip /opt/encore-stack-game main
+```
+
+Optional env vars:
+
+```bash
+SSH_PORT=22 SSH_KEY=~/.ssh/id_ed25519 ENV_FILE=.env ./scripts/deploy-vm.sh user@your-vm-ip
+```
+
+What it does:
+- syncs project files to your VM via `rsync`
+- uploads env file as `.env`
+- runs `docker compose pull && docker compose up -d --build`
+
 ## API endpoints
 
 - `GET /api/auth/github/url` -> returns GitHub authorize URL
