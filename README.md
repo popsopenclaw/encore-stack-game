@@ -42,6 +42,22 @@ flutter pub get
 flutter run -d linux   # or windows/macos/android/ios
 ```
 
+## Quick launch script (frontend)
+
+```bash
+./scripts/run-frontend.sh
+```
+
+Optional device argument:
+
+```bash
+./scripts/run-frontend.sh linux
+./scripts/run-frontend.sh windows
+./scripts/run-frontend.sh macos
+./scripts/run-frontend.sh android
+./scripts/run-frontend.sh ios
+```
+
 ## API endpoints
 
 - `GET /api/auth/github/url` -> returns GitHub authorize URL
