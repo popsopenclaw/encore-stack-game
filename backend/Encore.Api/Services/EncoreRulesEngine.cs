@@ -167,19 +167,22 @@ public class EncoreRulesEngine
         // G=Green, Y=Yellow, O=Orange, B=Blue, P=Pink/Purple
         var rows = new[]
         {
-            "GGGYYYYGBBBOYYY",
-            "OGGYYYYOPPBBOOY",
-            "BGPPGYGOOPBOOGG",
+            // A..............O
+            "GGGY YYYGBBBOYYY".Replace(" ",""),
+            "OGGYYYOOPPBBOOY",
+            "BGPPGGGOPPBOOGG",
             "BPOGOOBPPYOOOGG",
-            "POOYYBBGOYOPPBB",
-            "PBPPOOPPYOPOPPB",
-            "YBPPPPPYOOPPBBO",
+            "POOYYBBGOYOOPPB",
+            "PBPPOOPPYOOPPPB",
+            "YYPPPPPYYOPPBBO",
             "YYBBBBPYYYGGOOO"
         };
 
         var stars = new HashSet<(int x, int y)>
         {
-            (0,2),(2,1),(4,1),(6,2),(7,0),(9,2),(11,0),(14,6),(13,7),(10,4),(8,6),(3,5),(5,3),(12,5)
+            (0,2), (2,1), (4,1), (6,2), (7,0),
+            (9,2), (11,1), (13,0),
+            (3,5), (5,3), (8,6), (10,4), (12,5), (14,7)
         };
 
         var cols = "ABCDEFGHIJKLMNO".ToCharArray();

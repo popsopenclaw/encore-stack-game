@@ -154,7 +154,14 @@ class _HomePageState extends State<HomePage> {
             child: _card(
               child: board.isEmpty
                   ? const Center(child: Text('Start a game to render board'))
-                  : BoardWidget(board: board, colorFor: _cellColor),
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: BoardWidget(board: board, colorFor: _cellColor)),
+                        const SizedBox(width: 12),
+                        const SideScoreLegend(),
+                      ],
+                    ),
             ),
           ),
         ],
@@ -168,6 +175,57 @@ class _HomePageState extends State<HomePage> {
         margin: const EdgeInsets.all(12),
         child: Padding(padding: const EdgeInsets.all(12), child: child),
       );
+}
+
+
+class SideScoreLegend extends StatelessWidget {
+  const SideScoreLegend({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    Widget row(Color c, String a, String b) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(children: [
+        Container(width: 26, height: 26, decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.black26))),
+        const SizedBox(width: 6),
+        _pill(a),
+        const SizedBox(width: 4),
+        _pill(b),
+      ]),
+    );
+
+    return Container(
+      width: 110,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1F1F1F),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('BONUS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          row(const Color(0xFF7ED37F), '5', '3'),
+          row(const Color(0xFFF6D55C), '5', '3'),
+          row(const Color(0xFF4A90E2), '5', '3'),
+          row(const Color(0xFFB084F5), '5', '3'),
+          row(const Color(0xFFF28D35), '5', '3'),
+          const SizedBox(height: 10),
+          const Text('★ unchecked: -2', style: TextStyle(color: Colors.white70, fontSize: 12)),
+          const Text('! unused: +1', style: TextStyle(color: Colors.white70, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  Widget _pill(String t) => Container(
+    width: 22,
+    height: 22,
+    alignment: Alignment.center,
+    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6)),
+    child: Text(t, style: const TextStyle(fontWeight: FontWeight.bold)),
+  );
 }
 
 class BoardWidget extends StatelessWidget {
