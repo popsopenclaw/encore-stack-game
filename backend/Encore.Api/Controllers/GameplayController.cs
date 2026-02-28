@@ -39,6 +39,14 @@ public class GameplayController(GameSessionService gameSessionService, EncoreRul
         return Ok(roll);
     }
 
+    [HttpGet("{sessionId}/score")]
+    public async Task<IActionResult> Score(string sessionId)
+    {
+        var state = await gameSessionService.GetStateAsync<GameState>(sessionId);
+        if (state is null) return NotFound();
+        return Ok(rules.CalculateScores(state));
+    }
+
     [HttpPost("{sessionId}/move")]
     public async Task<IActionResult> Move(string sessionId, [FromBody] MoveRequest move)
     {

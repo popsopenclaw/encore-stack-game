@@ -76,6 +76,28 @@ public class EncoreRulesEngine
         if (state.InitialOpenDraftTurnsRemaining > 0) state.InitialOpenDraftTurnsRemaining--;
     }
 
+
+    public List<object> CalculateScores(GameState state)
+    {
+        var result = new List<object>();
+        foreach (var pair in state.Players.Select((p,i)=>new{p,i}))
+        {
+            var p = pair.p;
+            var colPts = p.CompletedColumns.Sum(c =>
+            {
+                var pts = state.ColumnPoints[c];
+                return state.ColumnFirstClaimByPlayerIndex.TryGetValue(c, out var owner) && owner == pair.i ? pts.first : pts.later;
+            });
+            var colorBonus = p.CompletedColors.Count * 5;
+            var jokerBonus = p.JokerMarksRemaining;
+            var uncheckedStars = state.Board.Where(c => c.Starred && !p.CheckedCells.Contains(c.Id)).Count();
+            var starPenalty = uncheckedStars * 2;
+            var total = colPts + colorBonus + jokerBonus - starPenalty;
+            result.Add(new { playerIndex = pair.i, player = p.Name, columns = colPts, colorBonus, jokerBonus, starPenalty, total });
+        }
+        return result;
+    }
+
     private static CellColor ResolveColorFromCells(GameState state, List<string> ids)
     {
         var colors = state.Board.Where(c => ids.Contains(c.Id)).Select(c => c.Color).Distinct().ToList();
@@ -133,30 +155,55 @@ public class EncoreRulesEngine
 
     private static Dictionary<string, (int first, int later)> BuildColumnPoints()
     {
-        const string cols = "ABCDEFGHIJKLMNO";
-        return cols.ToDictionary(c => c.ToString(), c => (2, 1));
+        var top = new[] { 5,3,3,3,2,2,2,1,2,2,2,3,3,3,5 };
+        var low = new[] { 3,2,2,2,1,1,1,0,1,1,1,2,2,2,3 };
+        var cols = "ABCDEFGHIJKLMNO".ToCharArray();
+        return cols.Select((c, i) => new { c, i }).ToDictionary(x => x.c.ToString(), x => (top[x.i], low[x.i]));
     }
 
     private static List<CellDef> BuildTemplateBoard()
     {
-        // Placeholder board template shaped for engine/testing; replace with exact PDF coordinates/colors for pixel-perfect parity.
-        var colors = new[] { CellColor.Yellow, CellColor.Orange, CellColor.Blue, CellColor.Green, CellColor.Purple };
+        // Best-effort board mapped from reference photo (A-O x 8 rows)
+        // G=Green, Y=Yellow, O=Orange, B=Blue, P=Pink/Purple
+        var rows = new[]
+        {
+            "GGGYYYYGBBBOYYY",
+            "OGGYYYYOPPBBOOY",
+            "BGPPGYGOOPBOOGG",
+            "BPOGOOBPPYOOOGG",
+            "POOYYBBGOYOPPBB",
+            "PBPPOOPPYOPOPPB",
+            "YBPPPPPYOOPPBBO",
+            "YYBBBBPYYYGGOOO"
+        };
+
+        var stars = new HashSet<(int x, int y)>
+        {
+            (0,2),(2,1),(4,1),(6,2),(7,0),(9,2),(11,0),(14,6),(13,7),(10,4),(8,6),(3,5),(5,3),(12,5)
+        };
+
         var cols = "ABCDEFGHIJKLMNO".ToCharArray();
         var cells = new List<CellDef>();
         var id = 1;
-        for (var x = 0; x < cols.Length; x++)
+        for (var y = 0; y < rows.Length; y++)
         {
-            for (var y = 0; y < 5; y++)
+            for (var x = 0; x < rows[y].Length; x++)
             {
-                var color = colors[(x + y) % colors.Length];
                 cells.Add(new CellDef
                 {
                     Id = $"c{id++}",
                     X = x,
                     Y = y,
                     Column = cols[x].ToString(),
-                    Color = color,
-                    Starred = (x + y) % 11 == 0
+                    Color = rows[y][x] switch
+                    {
+                        'G' => CellColor.Green,
+                        'Y' => CellColor.Yellow,
+                        'O' => CellColor.Orange,
+                        'B' => CellColor.Blue,
+                        _ => CellColor.Purple
+                    },
+                    Starred = stars.Contains((x, y))
                 });
             }
         }

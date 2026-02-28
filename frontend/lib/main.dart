@@ -181,32 +181,51 @@ class BoardWidget extends StatelessWidget {
     final maxY = board.map((e) => e['y'] as int).reduce((a, b) => a > b ? a : b);
     final grid = <String, Map<String, dynamic>>{for (final c in board) '${c['x']}_${c['y']}': c};
 
+    const topPts = [5,3,3,3,2,2,2,1,2,2,2,3,3,3,5];
+    const lowPts = [3,2,2,2,1,1,1,0,1,1,1,2,2,2,3];
+    const letters = 'ABCDEFGHIJKLMNO';
+
+    Widget pill(String t, {Color? bg, Color? fg}) => Container(
+      width: 30,
+      height: 24,
+      margin: const EdgeInsets.all(1.5),
+      decoration: BoxDecoration(
+        color: bg ?? Colors.white,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.black26),
+      ),
+      alignment: Alignment.center,
+      child: Text(t, style: TextStyle(fontWeight: FontWeight.bold, color: fg ?? Colors.black87)),
+    );
+
     return SingleChildScrollView(
       child: Column(
-        children: List.generate(maxY + 1, (y) {
-          return Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(maxX + 1, (x) {
-              final c = grid['${x}_$y'];
-              if (c == null) {
-                return const SizedBox(width: 30, height: 30);
-              }
-              return Container(
-                width: 30,
-                height: 30,
-                margin: const EdgeInsets.all(1.5),
-                decoration: BoxDecoration(
-                  color: colorFor((c['color'] as String)),
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: Colors.black26),
-                ),
-                child: (c['starred'] as bool)
-                    ? const Icon(Icons.star, size: 12, color: Colors.black54)
-                    : null,
-              );
-            }),
-          );
-        }),
+        children: [
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: List.generate(15, (i) => pill(letters[i], fg: i==7?Colors.red:Colors.black87))),
+          ...List.generate(maxY + 1, (y) {
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(maxX + 1, (x) {
+                final c = grid['${x}_$y'];
+                if (c == null) return const SizedBox(width: 30, height: 30);
+                return Container(
+                  width: 30,
+                  height: 30,
+                  margin: const EdgeInsets.all(1.5),
+                  decoration: BoxDecoration(
+                    color: colorFor((c['color'] as String)),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.black38),
+                  ),
+                  child: (c['starred'] as bool) ? const Icon(Icons.star, size: 13, color: Colors.white) : null,
+                );
+              }),
+            );
+          }),
+          const SizedBox(height: 8),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: List.generate(15, (i) => pill('${topPts[i]}', fg: i==7?Colors.red:Colors.black87))),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: List.generate(15, (i) => pill('${lowPts[i]}'))),
+        ],
       ),
     );
   }
