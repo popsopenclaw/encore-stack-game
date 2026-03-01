@@ -3,6 +3,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+const kBackendUrlFromBuild = String.fromEnvironment(
+  'BACKEND_URL',
+  defaultValue: 'http://localhost:8080',
+);
+const _backendPrefKey = 'backend_url';
 
 void main() => runApp(const EncoreApp());
 
@@ -31,7 +38,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final _api = TextEditingController(text: 'http://localhost:8080');
+  final _backendUrl = TextEditingController(text: kBackendUrlFromBuild);
   final _oauthCode = TextEditingController();
   final _players = TextEditingController(text: 'pop,bot2');
 
@@ -40,8 +47,50 @@ class _HomePageState extends State<HomePage> {
   String _status = 'Ready';
   Map<String, dynamic>? _state;
 
+  String get _apiBase => _backendUrl.text.trim();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBackendUrl();
+  }
+
+  @override
+  void dispose() {
+    _backendUrl.dispose();
+    _oauthCode.dispose();
+    _players.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadBackendUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(_backendPrefKey);
+    if (saved != null && saved.isNotEmpty) {
+      _backendUrl.text = saved;
+    }
+  }
+
+  Future<void> _saveBackendUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_backendPrefKey, _apiBase);
+    if (mounted) {
+      setState(() => _status = 'Backend URL saved: $_apiBase');
+    }
+  }
+
+  void _setLocalBackend() {
+    _backendUrl.text = 'http://localhost:8080';
+    _saveBackendUrl();
+  }
+
+  void _setProductionBackend() {
+    _backendUrl.text = kBackendUrlFromBuild;
+    _saveBackendUrl();
+  }
+
   Future<void> _githubLoginUrl() async {
-    final r = await http.get(Uri.parse('${_api.text}/api/auth/github/url?state=encore-app'));
+    final r = await http.get(Uri.parse('$_apiBase/api/auth/github/url?state=encore-app'));
     final url = (jsonDecode(r.body) as Map<String, dynamic>)['url'] as String;
     await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     setState(() => _status = 'Browser opened. Paste OAuth code from callback URL.');
@@ -49,7 +98,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _exchange() async {
     final r = await http.post(
-      Uri.parse('${_api.text}/api/auth/github/exchange'),
+      Uri.parse('$_apiBase/api/auth/github/exchange'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'code': _oauthCode.text.trim()}),
     );
@@ -67,7 +116,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _startGame() async {
     final names = _players.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
     final r = await http.post(
-      Uri.parse('${_api.text}/api/gameplay/start'),
+      Uri.parse('$_apiBase/api/gameplay/start'),
       headers: {'Authorization': 'Bearer $_jwt', 'Content-Type': 'application/json'},
       body: jsonEncode({'playerNames': names}),
     );
@@ -86,7 +135,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _reloadState() async {
     if (_sessionId == null) return;
     final r = await http.get(
-      Uri.parse('${_api.text}/api/gameplay/$_sessionId'),
+      Uri.parse('$_apiBase/api/gameplay/$_sessionId'),
       headers: {'Authorization': 'Bearer $_jwt'},
     );
     if (r.statusCode < 400) {
@@ -131,7 +180,17 @@ class _HomePageState extends State<HomePage> {
                 _card(
                   child: Column(
                     children: [
-                      TextField(controller: _api, decoration: const InputDecoration(labelText: 'API URL')),
+                      TextField(
+                        controller: _backendUrl,
+                        decoration: const InputDecoration(labelText: 'Backend URL'),
+                        onSubmitted: (_) => _saveBackendUrl(),
+                      ),
+                      const SizedBox(height: 6),
+                      Wrap(spacing: 8, runSpacing: 8, children: [
+                        OutlinedButton(onPressed: _setLocalBackend, child: const Text('Use Local')),
+                        OutlinedButton(onPressed: _setProductionBackend, child: const Text('Use Production Default')),
+                        ElevatedButton(onPressed: _saveBackendUrl, child: const Text('Save URL')),
+                      ]),
                       TextField(controller: _players, decoration: const InputDecoration(labelText: 'Players comma-separated')),
                       const SizedBox(height: 8),
                       Wrap(spacing: 8, runSpacing: 8, children: [

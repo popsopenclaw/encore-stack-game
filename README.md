@@ -48,6 +48,12 @@ flutter pub get
 flutter run -d linux   # or windows/macos/android/ios
 ```
 
+Set production default backend at build/run time (still overridable in-app):
+
+```bash
+flutter run -d linux --dart-define=BACKEND_URL=https://your-domain.com
+```
+
 ## Quick launch script (frontend)
 
 ```bash
@@ -62,6 +68,12 @@ Optional device argument:
 ./scripts/run-frontend.sh macos
 ./scripts/run-frontend.sh android
 ./scripts/run-frontend.sh ios
+```
+
+Optional production backend default:
+
+```bash
+BACKEND_URL=https://your-domain.com ./scripts/run-frontend.sh linux
 ```
 
 ## Bootstrap a fresh Ubuntu server
