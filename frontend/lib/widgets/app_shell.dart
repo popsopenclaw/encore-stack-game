@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_spacing.dart';
+
 class AppShell extends StatelessWidget {
   const AppShell({
     super.key,
     required this.title,
     required this.child,
     this.actions,
-    this.padding = const EdgeInsets.all(16),
+    this.padding = AppSpacing.pagePadding,
   });
 
   final String title;

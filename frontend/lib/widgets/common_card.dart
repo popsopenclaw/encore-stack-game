@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_spacing.dart';
+
 class CommonCard extends StatelessWidget {
   const CommonCard({super.key, required this.child});
 
@@ -9,7 +11,7 @@ class CommonCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: AppSpacing.cardPadding,
         child: child,
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../state/game_controller.dart';
+import '../state/lobby_state.dart';
 import '../theme/app_palette.dart';
 import '../widgets/backend_url_section.dart';
 import '../widgets/board_sheet.dart';
@@ -94,6 +95,8 @@ class _GameScreenState extends State<GameScreen> {
                           if (controller.sessionId != null) Text('Session: ${controller.sessionId}'),
                           if (controller.scores.isNotEmpty) Text('Scores loaded: ${controller.scores.length}'),
                           if (controller.events.isNotEmpty) Text('Events loaded: ${controller.events.length}'),
+                        if (lobbyState.lobbyCode != null)
+                          Text('Lobby: ${lobbyState.lobbyCode} • ${lobbyState.lobbyName.isEmpty ? 'Untitled' : lobbyState.lobbyName}'),
                         ],
                       ),
                     ),
