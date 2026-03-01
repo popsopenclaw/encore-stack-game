@@ -25,4 +25,22 @@ class AppTextStyles {
     fontWeight: FontWeight.w700,
     color: AppPalette.textOnDark,
   );
+
+  static const boardHeader = TextStyle(
+    fontSize: 19,
+    fontWeight: FontWeight.w900,
+    color: AppPalette.textPrimary,
+  );
+
+  static const boardLabel = TextStyle(
+    fontSize: 20,
+    fontWeight: FontWeight.w800,
+    color: AppPalette.textPrimary,
+  );
+
+  static const boardValue = TextStyle(
+    fontSize: 26,
+    fontWeight: FontWeight.w900,
+    color: AppPalette.textOnDark,
+  );
 }

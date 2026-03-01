@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_palette.dart';
+import '../theme/app_text_styles.dart';
 
 class BoardSheet extends StatelessWidget {
   const BoardSheet({super.key, required this.board, required this.colorFor});
@@ -93,7 +94,7 @@ class SideScoreLegend extends StatelessWidget {
           row(AppPalette.tilePurple, '5', '3'),
           row(AppPalette.tileOrange, '5', '3'),
           const SizedBox(height: 8),
-          const Text('BONUS =', style: TextStyle(color: AppPalette.white, fontWeight: FontWeight.w700, fontSize: 20)),
+          const Text('BONUS =', style: AppTextStyles.boardLabel),
           const SizedBox(height: 8),
           const _RuleLine('A-O', '+', AppPalette.success),
           const _RuleLine('!', '+1', AppPalette.success),
@@ -102,7 +103,7 @@ class SideScoreLegend extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(color: AppPalette.white, borderRadius: BorderRadius.circular(8)),
-            child: const Text('TOTAL =', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 26)),
+            child: Text('TOTAL =', style: AppTextStyles.boardValue.copyWith(color: AppPalette.textPrimary)),
           ),
         ],
       ),
@@ -135,11 +136,11 @@ class _RuleLine extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
               decoration: BoxDecoration(color: AppPalette.white, borderRadius: BorderRadius.circular(8)),
-              child: Text(label, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20)),
+              child: Text(label, style: AppTextStyles.boardLabel),
             ),
           ),
           const SizedBox(width: 4),
-          Text(value, style: TextStyle(color: valueColor, fontWeight: FontWeight.w900, fontSize: 26)),
+          Text(value, style: AppTextStyles.boardValue.copyWith(color: valueColor)),
         ],
       ),
     );
@@ -163,7 +164,7 @@ class BottomRulesStrip extends StatelessWidget {
           const SizedBox(width: 6),
           _capsule('✖'),
           const SizedBox(width: 6),
-          const Text('=', style: TextStyle(color: AppPalette.white, fontSize: 26, fontWeight: FontWeight.bold)),
+          const Text('=', style: AppTextStyles.boardValue),
           const SizedBox(width: 10),
           ...List.generate(
             8,
@@ -182,7 +183,7 @@ class BottomRulesStrip extends StatelessWidget {
         height: 34,
         alignment: Alignment.center,
         decoration: BoxDecoration(color: AppPalette.white, borderRadius: BorderRadius.circular(10)),
-        child: Text(t, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
+        child: Text(t, style: AppTextStyles.boardLabel),
       );
 
   Widget _circle(String t) => Container(
@@ -190,7 +191,7 @@ class BottomRulesStrip extends StatelessWidget {
         height: 34,
         alignment: Alignment.center,
         decoration: const BoxDecoration(color: AppPalette.white, shape: BoxShape.circle),
-        child: Text(t, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
+        child: Text(t, style: AppTextStyles.boardLabel),
       );
 }
 
@@ -220,7 +221,7 @@ class BoardGrid extends StatelessWidget {
             border: Border.all(color: AppPalette.borderLight),
           ),
           alignment: Alignment.center,
-          child: Text(t, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 19, color: fg ?? AppPalette.textPrimary)),
+          child: Text(t, style: AppTextStyles.boardHeader.copyWith(color: fg ?? AppPalette.textPrimary)),
         );
 
     return SingleChildScrollView(

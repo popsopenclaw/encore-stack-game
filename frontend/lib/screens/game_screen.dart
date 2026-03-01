@@ -4,6 +4,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../state/game_controller.dart';
 import '../state/lobby_state.dart';
 import '../theme/app_palette.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_text_styles.dart';
 import '../widgets/backend_url_section.dart';
 import '../widgets/board_sheet.dart';
 import '../widgets/common_card.dart';
@@ -75,8 +77,12 @@ class _GameScreenState extends State<GameScreen> {
                             onUseLocal: controller.setLocalBackend,
                             onUseProduction: controller.setProductionBackend,
                           ),
-                          TextField(controller: controller.players, decoration: const InputDecoration(labelText: 'Players comma-separated')),
-                          const SizedBox(height: 8),
+                          Text('Connection', style: AppTextStyles.subtitle),
+                        const SizedBox(height: AppSpacing.xs),
+                        TextField(controller: controller.players, decoration: const InputDecoration(labelText: 'Players comma-separated')),
+                          const SizedBox(height: AppSpacing.md),
+                          Text('Session Actions', style: AppTextStyles.subtitle),
+                          const SizedBox(height: AppSpacing.xs),
                           PrimaryActionsSection(
                             onOAuthUrl: () => controller.githubLoginUrl(
                               (url) => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
