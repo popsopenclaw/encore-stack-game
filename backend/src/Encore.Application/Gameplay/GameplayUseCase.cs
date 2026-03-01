@@ -1,10 +1,9 @@
-using System.Text.Json;
 using Encore.Api.Domain;
-using Encore.Api.Services;
+using Encore.Application.Abstractions;
 
 namespace Encore.Application.Gameplay;
 
-public class GameplayUseCase(GameSessionService gameSessionService, EncoreRulesEngine rules) : IGameplayUseCase
+public class GameplayUseCase(IGameplayRepository repository, IGameRules rules) : IGameplayUseCase
 {
     public async Task<GameState> StartAsync(StartGameRequest request, CancellationToken cancellationToken = default)
     {
@@ -12,12 +11,12 @@ public class GameplayUseCase(GameSessionService gameSessionService, EncoreRulesE
             throw new InvalidOperationException("Player count must be 1..6");
 
         var state = rules.NewGame(request.PlayerNames);
-        await gameSessionService.SaveStateAsync(state.SessionId, JsonSerializer.Serialize(state));
+        await repository.SaveAsync(state.SessionId, state);
         return state;
     }
 
     public Task<GameState?> GetAsync(string sessionId, CancellationToken cancellationToken = default)
-        => gameSessionService.GetStateAsync<GameState>(sessionId);
+        => repository.GetAsync(sessionId);
 
     public async Task<DiceRoll> RollAsync(string sessionId, CancellationToken cancellationToken = default)
     {
@@ -59,13 +58,13 @@ public class GameplayUseCase(GameSessionService gameSessionService, EncoreRulesE
 
     public async Task<List<object>?> ScoreAsync(string sessionId, CancellationToken cancellationToken = default)
     {
-        var state = await gameSessionService.GetStateAsync<GameState>(sessionId);
+        var state = await repository.GetAsync(sessionId);
         return state is null ? null : rules.CalculateScores(state);
     }
 
     public async Task<List<TurnEvent>?> EventsAsync(string sessionId, CancellationToken cancellationToken = default)
     {
-        var state = await gameSessionService.GetStateAsync<GameState>(sessionId);
+        var state = await repository.GetAsync(sessionId);
         return state?.Events;
     }
 
@@ -78,9 +77,9 @@ public class GameplayUseCase(GameSessionService gameSessionService, EncoreRulesE
     }
 
     private async Task<GameState> MustGetState(string sessionId)
-        => await gameSessionService.GetStateAsync<GameState>(sessionId)
+        => await repository.GetAsync(sessionId)
            ?? throw new KeyNotFoundException("Game session not found");
 
     private async Task Save(string sessionId, GameState state)
-        => await gameSessionService.SaveStateAsync(sessionId, JsonSerializer.Serialize(state));
+        => await repository.SaveAsync(sessionId, state);
 }

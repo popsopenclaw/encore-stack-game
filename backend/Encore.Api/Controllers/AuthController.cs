@@ -1,5 +1,5 @@
-using Encore.Api.Contracts.Auth;
 using Encore.Application.Auth;
+using Encore.Application.Contracts.Auth;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Encore.Api.Controllers;

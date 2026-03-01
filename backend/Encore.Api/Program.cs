@@ -1,8 +1,10 @@
 using System.Text;
 using Encore.Api.Data;
 using Encore.Api.Services;
+using Encore.Application.Abstractions;
 using Encore.Application.Auth;
 using Encore.Application.Gameplay;
+using Encore.Infrastructure.Adapters;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -27,6 +29,14 @@ builder.Services.AddSingleton<BoardTemplateProvider>();
 builder.Services.AddScoped<GameSessionService>();
 builder.Services.AddScoped<IGameStateStore, GameSessionService>();
 builder.Services.AddScoped<EncoreRulesEngine>();
+
+// Application ports/adapters
+builder.Services.AddScoped<IAuthGateway, AuthGatewayAdapter>();
+builder.Services.AddScoped<ITokenIssuer, TokenIssuerAdapter>();
+builder.Services.AddScoped<IGameplayRepository, GameplayRepositoryAdapter>();
+builder.Services.AddScoped<IGameRules, GameRulesAdapter>();
+
+// Use-cases
 builder.Services.AddScoped<IAuthUseCase, AuthUseCase>();
 builder.Services.AddScoped<IGameplayUseCase, GameplayUseCase>();
 

@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../Encore.Domain/Encore.Domain.csproj" />
+    <ProjectReference Include="../Encore.Application/Encore.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>

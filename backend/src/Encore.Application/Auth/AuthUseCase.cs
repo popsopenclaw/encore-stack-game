@@ -1,16 +1,17 @@
-using Encore.Api.Services;
+using Encore.Application.Abstractions;
+using Encore.Application.Contracts.Auth;
 
 namespace Encore.Application.Auth;
 
-public class AuthUseCase(GitHubOAuthService gitHubOAuthService, JwtTokenService jwtTokenService) : IAuthUseCase
+public class AuthUseCase(IAuthGateway authGateway, ITokenIssuer tokenIssuer) : IAuthUseCase
 {
     public string BuildGitHubLoginUrl(string? state = null)
-        => gitHubOAuthService.BuildAuthorizeUrl(state);
+        => authGateway.BuildAuthorizeUrl(state);
 
-    public async Task<AuthResult> ExchangeGitHubCodeAsync(string code, CancellationToken cancellationToken)
+    public async Task<AuthResponse> ExchangeGitHubCodeAsync(string code, CancellationToken cancellationToken)
     {
-        var account = await gitHubOAuthService.ExchangeCodeAndUpsertAsync(code, cancellationToken);
-        var token = jwtTokenService.CreateToken(account);
-        return new AuthResult(token, account.Username, account.Email, account.AvatarUrl);
+        var account = await authGateway.ExchangeCodeAndUpsertAsync(code, cancellationToken);
+        var token = tokenIssuer.CreateToken(account);
+        return new AuthResponse(token, account.Username, account.Email, account.AvatarUrl);
     }
 }

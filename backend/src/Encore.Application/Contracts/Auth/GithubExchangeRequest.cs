@@ -1,3 +1,3 @@
-namespace Encore.Api.Contracts.Auth;
+namespace Encore.Application.Contracts.Auth;
 
 public record GithubExchangeRequest(string Code);
