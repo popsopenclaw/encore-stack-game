@@ -89,11 +89,31 @@ What it does:
 
 ## API endpoints
 
+Auth:
 - `GET /api/auth/github/url` -> returns GitHub authorize URL
 - `POST /api/auth/github/exchange` -> exchanges OAuth code for JWT + user
-- `POST /api/gamesessions` (Bearer JWT) -> create game session in Valkey
-- `GET /api/gamesessions/{id}` (Bearer JWT) -> load session from Valkey
-- `PUT /api/gamesessions/{id}/state` (Bearer JWT) -> update session state JSON
+
+Gameplay (Bearer JWT):
+- `POST /api/gameplay/start` -> start a new game state
+- `GET /api/gameplay/{sessionId}` -> fetch game state
+- `POST /api/gameplay/{sessionId}/roll` -> active player roll phase
+- `POST /api/gameplay/{sessionId}/active-select` -> active picks dice (or pass)
+- `GET /api/gameplay/{sessionId}/available-dice/{playerIndex}` -> dice available for that player this turn
+- `POST /api/gameplay/{sessionId}/action` -> player submits move (or pass)
+- `POST /api/gameplay/{sessionId}/encore` -> enables one extra round after end trigger
+- `GET /api/gameplay/{sessionId}/score` -> score breakdown
+
+Legacy session endpoints (still available):
+- `POST /api/gamesessions`
+- `GET /api/gamesessions/{id}`
+- `PUT /api/gamesessions/{id}/state`
+
+## DevOps helpers
+
+- Local commands: `make up`, `make down`, `make test`, `make analyze`
+- CI pipeline: `.github/workflows/ci.yml` (backend build+tests, frontend analyze)
+- Rules audit matrix: `RULES_VALIDATION.md`
+- VM backup script (run on server): `./scripts/backup-vm.sh`
 
 ## Notes
 

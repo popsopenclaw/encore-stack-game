@@ -11,6 +11,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-encore} -d ${POSTGRES_DB:-encore_game}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   valkey:
     image: valkey/valkey:7.2
@@ -20,6 +25,11 @@ services:
       - "6379:6379"
     volumes:
       - valkey_data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "PING"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   backend:
     build:
@@ -28,10 +38,12 @@ services:
     container_name: encore-api
     restart: unless-stopped
     depends_on:
-      - postgres
-      - valkey
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB:-encore_game};Username=${POSTGRES_USER:-encore};Password=${POSTGRES_PASSWORD:-encore}
       ConnectionStrings__Valkey: valkey:6379
       Jwt__Issuer: ${JWT_ISSUER:-encore-api}
@@ -42,6 +54,11 @@ services:
       GitHubOAuth__RedirectUri: ${GITHUB_REDIRECT_URI}
     ports:
       - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
 volumes:
   postgres_data:

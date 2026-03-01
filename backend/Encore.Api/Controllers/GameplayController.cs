@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Encore.Api.Contracts.Game;
 using Encore.Api.Domain;
 using Encore.Api.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -34,9 +33,86 @@ public class GameplayController(GameSessionService gameSessionService, EncoreRul
         var state = await gameSessionService.GetStateAsync<GameState>(sessionId);
         if (state is null) return NotFound();
 
-        var roll = rules.RollDice();
-        await gameSessionService.SaveStateAsync(sessionId, JsonSerializer.Serialize(state));
-        return Ok(roll);
+        try
+        {
+            rules.RollForTurn(state);
+            await gameSessionService.SaveStateAsync(sessionId, JsonSerializer.Serialize(state));
+            return Ok(state.CurrentRoll);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost("{sessionId}/active-select")]
+    public async Task<IActionResult> ActiveSelect(string sessionId, [FromBody] ActiveSelectionRequest request)
+    {
+        var state = await gameSessionService.GetStateAsync<GameState>(sessionId);
+        if (state is null) return NotFound();
+
+        try
+        {
+            rules.ActivePlayerSelect(state, request);
+            await gameSessionService.SaveStateAsync(sessionId, JsonSerializer.Serialize(state));
+            return Ok(state);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("{sessionId}/available-dice/{playerIndex:int}")]
+    public async Task<IActionResult> AvailableDice(string sessionId, int playerIndex)
+    {
+        var state = await gameSessionService.GetStateAsync<GameState>(sessionId);
+        if (state is null) return NotFound();
+
+        try
+        {
+            return Ok(rules.GetAvailableDiceForPlayer(state, playerIndex));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost("{sessionId}/action")]
+    public async Task<IActionResult> Action(string sessionId, [FromBody] PlayerActionRequest request)
+    {
+        var state = await gameSessionService.GetStateAsync<GameState>(sessionId);
+        if (state is null) return NotFound();
+
+        try
+        {
+            rules.ResolvePlayerAction(state, request);
+            await gameSessionService.SaveStateAsync(sessionId, JsonSerializer.Serialize(state));
+            return Ok(state);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost("{sessionId}/encore")]
+    public async Task<IActionResult> EnableEncore(string sessionId)
+    {
+        var state = await gameSessionService.GetStateAsync<GameState>(sessionId);
+        if (state is null) return NotFound();
+
+        try
+        {
+            rules.EnableEncore(state);
+            await gameSessionService.SaveStateAsync(sessionId, JsonSerializer.Serialize(state));
+            return Ok(state);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     [HttpGet("{sessionId}/score")]
@@ -47,6 +123,7 @@ public class GameplayController(GameSessionService gameSessionService, EncoreRul
         return Ok(rules.CalculateScores(state));
     }
 
+    // Legacy direct move endpoint kept for compatibility with earlier clients.
     [HttpPost("{sessionId}/move")]
     public async Task<IActionResult> Move(string sessionId, [FromBody] MoveRequest move)
     {
@@ -55,7 +132,7 @@ public class GameplayController(GameSessionService gameSessionService, EncoreRul
 
         try
         {
-            rules.ApplyMove(state, move);
+            rules.ApplyMoveDirect(state, move);
             await gameSessionService.SaveStateAsync(sessionId, JsonSerializer.Serialize(state));
             return Ok(state);
         }
