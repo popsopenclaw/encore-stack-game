@@ -30,6 +30,12 @@ In GitHub OAuth App:
 docker compose up -d --build
 ```
 
+Production-style run (no DB/cache public ports):
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
 Backend API:
 - `http://localhost:8080`
 - Swagger: `http://localhost:8080/swagger`
@@ -111,6 +117,7 @@ Legacy session endpoints (still available):
 ## DevOps helpers
 
 - Local commands: `make up`, `make down`, `make test`, `make analyze`
+- Local CI script: `./scripts/ci-local.sh`
 - CI pipeline: `.github/workflows/ci.yml` (backend build+tests, frontend analyze)
 - Rules audit matrix: `RULES_VALIDATION.md`
 - VM backup script (run on server): `./scripts/backup-vm.sh`

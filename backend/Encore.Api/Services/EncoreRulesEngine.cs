@@ -2,7 +2,7 @@ using Encore.Api.Domain;
 
 namespace Encore.Api.Services;
 
-public class EncoreRulesEngine : IGameRulesEngine<GameState>
+public class EncoreRulesEngine(BoardTemplateProvider templates) : IGameRulesEngine<GameState>
 {
     public string GameKey => "encore";
     private static readonly Random Rng = new();
@@ -12,7 +12,7 @@ public class EncoreRulesEngine : IGameRulesEngine<GameState>
         return new GameState
         {
             Players = playerNames.Select(n => new PlayerState { Name = n }).ToList(),
-            Board = BuildTemplateBoard(),
+            Board = BuildTemplateBoard(templates.GetEncoreTemplate()),
             ColumnPoints = BuildColumnPoints(),
             ColorCompletionPoints = BuildColorCompletionPoints(),
             Phase = TurnPhase.NeedRoll
@@ -352,26 +352,10 @@ public class EncoreRulesEngine : IGameRulesEngine<GameState>
             [CellColor.Orange] = (5, 3)
         };
 
-    private static List<CellDef> BuildTemplateBoard()
+    private static List<CellDef> BuildTemplateBoard(BoardTemplate template)
     {
-        var rows = new[]
-        {
-            "GGGYYYYGBBBOYYY",
-            "OGGYYYOOPPBBOOY",
-            "BGPPGGGOPPBOOGG",
-            "BPOGOOBPPYOOOGG",
-            "POOYYBBGOYOOPPB",
-            "PBPPOOPPYOOPPPB",
-            "YYPPPPPYYOPPBBO",
-            "YYBBBBPYYYGGOOO"
-        };
-
-        var stars = new HashSet<(int x, int y)>
-        {
-            (0,2), (2,1), (4,1), (6,2), (7,0),
-            (9,2), (11,1), (13,0),
-            (3,5), (5,3), (8,6), (10,4), (12,5), (14,7)
-        };
+        var rows = template.Rows;
+        var stars = template.Stars.Select(s => (s.X, s.Y)).ToHashSet();
 
         var cols = "ABCDEFGHIJKLMNO".ToCharArray();
         var cells = new List<CellDef>();
@@ -402,4 +386,5 @@ public class EncoreRulesEngine : IGameRulesEngine<GameState>
 
         return cells;
     }
+
 }

@@ -21,7 +21,9 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<GitHubOAuthService>();
+builder.Services.AddSingleton<BoardTemplateProvider>();
 builder.Services.AddScoped<GameSessionService>();
+builder.Services.AddScoped<IGameStateStore, GameSessionService>();
 builder.Services.AddScoped<EncoreRulesEngine>();
 
 var jwtKey = builder.Configuration["Jwt:SigningKey"] ?? throw new InvalidOperationException("Missing Jwt:SigningKey");

@@ -5,7 +5,16 @@ namespace Encore.Api.Tests;
 
 public class EncoreRulesEngineTests
 {
-    private readonly EncoreRulesEngine _engine = new();
+    private readonly EncoreRulesEngine _engine;
+
+    public EncoreRulesEngineTests()
+    {
+        var env = new FakeHostEnvironment
+        {
+            ContentRootPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../Encore.Api"))
+        };
+        _engine = new EncoreRulesEngine(new BoardTemplateProvider(env));
+    }
 
     [Fact]
     public void FirstMove_MustTouchColumnH()

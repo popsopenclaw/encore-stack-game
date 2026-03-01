@@ -178,27 +178,52 @@ class BoardSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF2A2A2A),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        children: [
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: BoardWidget(board: board, colorFor: colorFor)),
-                const SizedBox(width: 12),
-                const SideScoreLegend(),
-              ],
-            ),
+    return Stack(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF202020),
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: const [
+              BoxShadow(color: Colors.black54, blurRadius: 14, offset: Offset(0, 8)),
+            ],
           ),
-          const SizedBox(height: 8),
-          const BottomRulesStrip(),
-        ],
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            children: [
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: BoardWidget(board: board, colorFor: colorFor)),
+                    const SizedBox(width: 12),
+                    const SideScoreLegend(),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              const BottomRulesStrip(),
+            ],
+          ),
+        ),
+        const Positioned(left: -10, top: 80, child: _FrameNotch()),
+        const Positioned(right: -10, top: 80, child: _FrameNotch()),
+      ],
+    );
+  }
+}
+
+class _FrameNotch extends StatelessWidget {
+  const _FrameNotch();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 20,
+      height: 64,
+      decoration: BoxDecoration(
+        color: const Color(0xFF121212),
+        borderRadius: BorderRadius.circular(10),
       ),
     );
   }
