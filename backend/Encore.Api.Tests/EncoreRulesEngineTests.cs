@@ -138,4 +138,38 @@ public class EncoreRulesEngineTests
         // B gets later column(3) + first color(5)
         Assert.Equal(8, bCombined);
     }
+
+    [Fact]
+    public void AllPlayersPass_AdvancesTurnAndActivePlayer()
+    {
+        var state = _engine.NewGame(["A", "B"]);
+
+        _engine.RollForTurn(state);
+        _engine.ActivePlayerSelect(state, new ActiveSelectionRequest(0, null, null, true));
+
+        _engine.ResolvePlayerAction(state, new PlayerActionRequest(0, null, null, null, true));
+        _engine.ResolvePlayerAction(state, new PlayerActionRequest(1, null, null, null, true));
+
+        Assert.Equal(2, state.Turn);
+        Assert.Equal(1, state.ActivePlayerIndex);
+        Assert.Equal(TurnPhase.NeedRoll, state.Phase);
+    }
+
+    [Fact]
+    public void Encore_CanOnlyBeEnabledAfterEndTrigger()
+    {
+        var state = _engine.NewGame(["A", "B"]);
+        Assert.Throws<InvalidOperationException>(() => _engine.EnableEncore(state));
+
+        state.EndTriggered = true;
+        state.IsFinished = true;
+        state.Phase = TurnPhase.Finished;
+
+        _engine.EnableEncore(state);
+
+        Assert.True(state.EncoreEnabled);
+        Assert.Equal(state.Players.Count, state.EncoreTurnsRemaining);
+        Assert.False(state.IsFinished);
+        Assert.Equal(TurnPhase.NeedRoll, state.Phase);
+    }
 }

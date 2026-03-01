@@ -133,7 +133,6 @@ Legacy session endpoints (still available):
 - Local commands: `make up`, `make down`, `make test`, `make analyze`
 - Local CI script: `./scripts/ci-local.sh`
 - CI pipeline: `.github/workflows/ci.yml` (backend build+tests, frontend analyze)
-- Optional manual VM deploy workflow: `.github/workflows/deploy-vm.yml`
 - Rules audit matrix: `RULES_VALIDATION.md`
 - API turn sequence: `TURN_FLOW.md`
 - VM backup script (run on server): `./scripts/backup-vm.sh`
