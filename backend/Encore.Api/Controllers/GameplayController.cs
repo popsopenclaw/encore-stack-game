@@ -123,6 +123,14 @@ public class GameplayController(GameSessionService gameSessionService, EncoreRul
         return Ok(rules.CalculateScores(state));
     }
 
+    [HttpGet("{sessionId}/events")]
+    public async Task<IActionResult> Events(string sessionId)
+    {
+        var state = await gameSessionService.GetStateAsync<GameState>(sessionId);
+        if (state is null) return NotFound();
+        return Ok(state.Events);
+    }
+
     // Legacy direct move endpoint kept for compatibility with earlier clients.
     [HttpPost("{sessionId}/move")]
     public async Task<IActionResult> Move(string sessionId, [FromBody] MoveRequest move)

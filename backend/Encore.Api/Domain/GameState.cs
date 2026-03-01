@@ -29,6 +29,16 @@ public class GameState
     public Dictionary<CellColor, (int first, int later)> ColorCompletionPoints { get; set; } = new();
 
     public bool IsFinished { get; set; }
+    public List<TurnEvent> Events { get; set; } = [];
+}
+
+public class TurnEvent
+{
+    public int Turn { get; set; }
+    public DateTimeOffset At { get; set; } = DateTimeOffset.UtcNow;
+    public string Type { get; set; } = string.Empty;
+    public int? PlayerIndex { get; set; }
+    public string Data { get; set; } = string.Empty;
 }
 
 public class PlayerState

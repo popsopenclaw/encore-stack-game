@@ -28,6 +28,7 @@ public class EncoreRulesEngine(BoardTemplateProvider templates) : IGameRulesEngi
         state.ActiveSelection = null;
         state.ResolvedPlayers.Clear();
         state.Phase = TurnPhase.NeedActiveSelection;
+        LogEvent(state, "roll", state.ActivePlayerIndex, $"colors={string.Join(',', state.CurrentRoll.ColorDice)};numbers={string.Join(',', state.CurrentRoll.NumberDice)}");
     }
 
     public void ActivePlayerSelect(GameState state, ActiveSelectionRequest request)
@@ -40,6 +41,8 @@ public class EncoreRulesEngine(BoardTemplateProvider templates) : IGameRulesEngi
         {
             state.ActiveSelection = null;
             state.Phase = TurnPhase.PlayersResolving;
+        LogEvent(state, "active-select", request.PlayerIndex, $"{request.ColorDie}/{request.NumberDie}");
+            LogEvent(state, "active-pass", request.PlayerIndex);
             return;
         }
 
@@ -52,6 +55,7 @@ public class EncoreRulesEngine(BoardTemplateProvider templates) : IGameRulesEngi
 
         state.ActiveSelection = new SelectedDice(request.ColorDie.Value, request.NumberDie.Value);
         state.Phase = TurnPhase.PlayersResolving;
+        LogEvent(state, "active-select", request.PlayerIndex, $"{request.ColorDie}/{request.NumberDie}");
     }
 
     public DiceRoll GetAvailableDiceForPlayer(GameState state, int playerIndex)
@@ -84,6 +88,7 @@ public class EncoreRulesEngine(BoardTemplateProvider templates) : IGameRulesEngi
         if (request.Pass)
         {
             MarkPlayerResolved(state, request.PlayerIndex);
+            LogEvent(state, "pass", request.PlayerIndex);
             return;
         }
 
@@ -95,6 +100,7 @@ public class EncoreRulesEngine(BoardTemplateProvider templates) : IGameRulesEngi
 
         var move = new MoveRequest(request.PlayerIndex, request.ColorDie.Value, request.NumberDie.Value, request.CellIds ?? []);
         ValidateAndApplyPlacement(state, move);
+        LogEvent(state, "move", request.PlayerIndex, $"cells={move.CellIds.Count};color={move.ColorDie};number={move.NumberDie}");
         MarkPlayerResolved(state, request.PlayerIndex);
     }
 
@@ -104,9 +110,11 @@ public class EncoreRulesEngine(BoardTemplateProvider templates) : IGameRulesEngi
         if (state.EncoreEnabled) throw new InvalidOperationException("Encore already enabled.");
 
         state.EncoreEnabled = true;
+        LogEvent(state, "encore-enabled");
         state.EncoreTurnsRemaining = state.Players.Count;
         state.IsFinished = false;
         if (state.Phase == TurnPhase.Finished) state.Phase = TurnPhase.NeedRoll;
+            LogEvent(state, "turn-advanced", state.ActivePlayerIndex);
     }
 
     // Legacy direct move path
@@ -202,6 +210,7 @@ public class EncoreRulesEngine(BoardTemplateProvider templates) : IGameRulesEngi
             p.TriggeredGameEnd = true;
             state.IsFinished = true;
             state.Phase = TurnPhase.Finished;
+            LogEvent(state, "end-triggered", move.PlayerIndex);
         }
     }
 
@@ -222,6 +231,7 @@ public class EncoreRulesEngine(BoardTemplateProvider templates) : IGameRulesEngi
             {
                 state.IsFinished = true;
                 state.Phase = TurnPhase.Finished;
+                LogEvent(state, "game-finished");
                 return;
             }
         }
@@ -229,6 +239,7 @@ public class EncoreRulesEngine(BoardTemplateProvider templates) : IGameRulesEngi
         if (!state.IsFinished)
         {
             state.Phase = TurnPhase.NeedRoll;
+            LogEvent(state, "turn-advanced", state.ActivePlayerIndex);
             state.CurrentRoll = null;
             state.ActiveSelection = null;
             state.ResolvedPlayers.Clear();
@@ -387,4 +398,18 @@ public class EncoreRulesEngine(BoardTemplateProvider templates) : IGameRulesEngi
         return cells;
     }
 
+
+    private static void LogEvent(GameState state, string type, int? playerIndex = null, string? data = null)
+    {
+        state.Events.Add(new TurnEvent
+        {
+            Turn = state.Turn,
+            Type = type,
+            PlayerIndex = playerIndex,
+            Data = data ?? string.Empty
+        });
+
+        if (state.Events.Count > 400)
+            state.Events = state.Events.Skip(state.Events.Count - 400).ToList();
+    }
 }
