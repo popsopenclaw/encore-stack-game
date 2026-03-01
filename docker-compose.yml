@@ -33,8 +33,8 @@ services:
 
   migrate:
     build:
-      context: ./backend/Encore.Api
-      dockerfile: Dockerfile.migrations
+      context: ./backend
+      dockerfile: Encore.Api/Dockerfile.migrations
     container_name: encore-migrate
     restart: "no"
     depends_on:
@@ -45,8 +45,8 @@ services:
 
   backend:
     build:
-      context: ./backend/Encore.Api
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: Encore.Api/Dockerfile
     container_name: encore-api
     restart: unless-stopped
     depends_on:

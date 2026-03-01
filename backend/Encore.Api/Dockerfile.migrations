@@ -2,10 +2,9 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0
 WORKDIR /src
 
 COPY . .
-
-RUN dotnet restore
+RUN dotnet restore Encore.Api/Encore.Api.csproj
 RUN dotnet tool install --global dotnet-ef --version 10.*
 
 ENV PATH="$PATH:/root/.dotnet/tools"
 
-CMD ["dotnet", "ef", "database", "update", "--project", "Encore.Api.csproj", "--startup-project", "Encore.Api.csproj"]
+CMD ["dotnet", "ef", "database", "update", "--project", "src/Encore.Infrastructure/Encore.Infrastructure.csproj", "--startup-project", "Encore.Api/Encore.Api.csproj", "--context", "AppDbContext"]

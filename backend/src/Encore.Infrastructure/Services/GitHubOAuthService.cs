@@ -3,6 +3,7 @@ using System.Text.Json;
 using Encore.Api.Data;
 using Encore.Api.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace Encore.Api.Services;
 

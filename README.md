@@ -5,11 +5,19 @@ Flutter frontend + .NET 8 backend using Docker Compose, Valkey for game sessions
 ## Stack
 
 - Frontend: Flutter (Android, iOS, Linux, macOS, Windows)
-- Backend: ASP.NET Core Web API (.NET 8)
+- Backend: ASP.NET Core Web API (.NET 10)
 - Auth: GitHub OAuth App + JWT
 - Session storage: Valkey
 - Account storage: PostgreSQL
 - Orchestration: Docker Compose
+
+## Backend structure (Clean Architecture)
+
+- `backend/src/Encore.Domain` → entities + game domain model
+- `backend/src/Encore.Application` → application layer (use-case/contracts surface)
+- `backend/src/Encore.Infrastructure` → EF Core data, Redis, OAuth/services implementations
+- `backend/Encore.Api` → HTTP API/controllers/composition root
+- `backend/Encore.sln` → solution including all backend projects
 
 ## 1) Configure env
 

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Encore.Api.Domain;
+using Microsoft.Extensions.Hosting;
 
 namespace Encore.Api.Services;
 
@@ -12,7 +13,16 @@ public class BoardTemplateProvider(IHostEnvironment env)
         const string key = "encore-default";
         if (_cache.TryGetValue(key, out var tpl)) return tpl;
 
-        var path = Path.Combine(env.ContentRootPath, "Domain", "Templates", "encore-default.json");
+        var candidates = new[]
+        {
+            Path.Combine(env.ContentRootPath, "Domain", "Templates", "encore-default.json"),
+            Path.Combine(env.ContentRootPath, "..", "src", "Encore.Domain", "Domain", "Templates", "encore-default.json"),
+            Path.Combine(AppContext.BaseDirectory, "Domain", "Templates", "encore-default.json")
+        };
+
+        var path = candidates.FirstOrDefault(File.Exists)
+                   ?? throw new FileNotFoundException("Could not locate encore-default.json template", string.Join(" | ", candidates));
+
         var json = File.ReadAllText(path);
         tpl = JsonSerializer.Deserialize<BoardTemplate>(json) ?? throw new InvalidOperationException("Invalid board template json");
         _cache[key] = tpl;
