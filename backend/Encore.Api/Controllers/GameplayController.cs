@@ -1,4 +1,4 @@
-using Encore.Api.Domain;
+using Encore.Domain;
 using Encore.Application.Gameplay;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

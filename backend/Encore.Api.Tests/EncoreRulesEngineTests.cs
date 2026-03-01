@@ -1,5 +1,5 @@
-using Encore.Api.Domain;
-using Encore.Api.Services;
+using Encore.Domain;
+using Encore.Infrastructure.Services;
 
 namespace Encore.Api.Tests;
 

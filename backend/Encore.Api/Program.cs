@@ -1,6 +1,6 @@
 using System.Text;
-using Encore.Api.Data;
-using Encore.Api.Services;
+using Encore.Infrastructure.Data;
+using Encore.Infrastructure.Services;
 using Encore.Application.Abstractions;
 using Encore.Application.Auth;
 using Encore.Application.Gameplay;

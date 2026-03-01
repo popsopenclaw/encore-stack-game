@@ -1,8 +1,8 @@
 using System.Text.Json;
-using Encore.Api.Domain;
+using Encore.Domain;
 using Microsoft.Extensions.Hosting;
 
-namespace Encore.Api.Services;
+namespace Encore.Infrastructure.Services;
 
 public class BoardTemplateProvider(IHostEnvironment env)
 {
@@ -16,7 +16,7 @@ public class BoardTemplateProvider(IHostEnvironment env)
         var candidates = new[]
         {
             Path.Combine(env.ContentRootPath, "Domain", "Templates", "encore-default.json"),
-            Path.Combine(env.ContentRootPath, "..", "Encore.Domain", "Domain", "Templates", "encore-default.json"),
+            Path.Combine(env.ContentRootPath, "..", "Encore.Domain", "Templates", "encore-default.json"),
             Path.Combine(AppContext.BaseDirectory, "Domain", "Templates", "encore-default.json")
         };
 

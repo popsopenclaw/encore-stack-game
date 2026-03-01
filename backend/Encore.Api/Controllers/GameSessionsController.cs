@@ -1,5 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
-using Encore.Api.Services;
+using Encore.Infrastructure.Services;
 using Encore.Application.Contracts.Game;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
