@@ -7,9 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../src/Encore.Domain/Encore.Domain.csproj" />
-    <ProjectReference Include="../src/Encore.Application/Encore.Application.csproj" />
-    <ProjectReference Include="../src/Encore.Infrastructure/Encore.Infrastructure.csproj" />
+    <ProjectReference Include="../Encore.Domain/Encore.Domain.csproj" />
+    <ProjectReference Include="../Encore.Application/Encore.Application.csproj" />
+    <ProjectReference Include="../Encore.Infrastructure/Encore.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
