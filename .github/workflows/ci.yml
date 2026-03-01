@@ -6,30 +6,42 @@ on:
   pull_request:
 
 jobs:
-  backend:
+  backend-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
-      - name: Restore
-        run: dotnet restore backend/Encore.Api/Encore.Api.csproj
-      - name: Build
-        run: dotnet build backend/Encore.Api/Encore.Api.csproj --no-restore
-      - name: Test
-        run: dotnet test backend/Encore.Api.Tests/Encore.Api.Tests.csproj --no-build --verbosity normal
 
-  frontend:
+      - name: Restore backend + tests
+        run: dotnet restore backend/Encore.Api.Tests/Encore.Api.Tests.csproj
+
+      - name: Build backend + tests
+        run: dotnet build backend/Encore.Api.Tests/Encore.Api.Tests.csproj --configuration Release --no-restore
+
+      - name: Run unit tests
+        run: dotnet test backend/Encore.Api.Tests/Encore.Api.Tests.csproj --configuration Release --no-build --verbosity normal
+
+  regression-checks:
     runs-on: ubuntu-latest
+    needs: backend-tests
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+
       - name: Flutter pub get
+        working-directory: frontend
         run: flutter pub get
+
+      - name: Frontend regression (static analysis)
         working-directory: frontend
-      - name: Flutter analyze
         run: flutter analyze
-        working-directory: frontend
+
+      - name: Compose regression (config validity)
+        run: docker compose config
