@@ -8,6 +8,7 @@ set -euo pipefail
 #   SSH_PORT=22
 #   SSH_KEY=~/.ssh/id_ed25519
 #   ENV_FILE=.env.production
+#   DEPLOY_MODE=prod|dev   (default: prod)
 
 TARGET="${1:-}"
 REMOTE_DIR="${2:-/opt/encore-stack-game}"
@@ -15,6 +16,7 @@ BRANCH="${3:-main}"
 SSH_PORT="${SSH_PORT:-22}"
 SSH_KEY="${SSH_KEY:-}"
 ENV_FILE="${ENV_FILE:-.env}"
+DEPLOY_MODE="${DEPLOY_MODE:-prod}"
 
 if [[ -z "$TARGET" ]]; then
   echo "Usage: $0 user@host [/remote/path] [branch]"
@@ -41,6 +43,8 @@ ssh "${SSH_OPTS[@]}" "$TARGET" "mkdir -p '$REMOTE_DIR'"
 echo "==> Syncing project files"
 rsync -az --delete \
   --exclude '.git' \
+  --exclude '.github' \
+  --exclude 'backups' \
   --exclude 'frontend/.dart_tool' \
   --exclude 'frontend/build' \
   --exclude '**/bin' \
@@ -51,7 +55,13 @@ rsync -az --delete \
 echo "==> Uploading env file"
 scp "${SSH_OPTS[@]}" "$ENV_FILE" "$TARGET:$REMOTE_DIR/.env"
 
-echo "==> Deploying with docker compose"
-ssh "${SSH_OPTS[@]}" "$TARGET" "cd '$REMOTE_DIR' && docker compose pull && docker compose up -d --build && docker compose ps"
+if [[ "$DEPLOY_MODE" == "prod" ]]; then
+  COMPOSE_CMD="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
+else
+  COMPOSE_CMD="docker compose"
+fi
 
-echo "✅ Deploy complete: $TARGET:$REMOTE_DIR"
+echo "==> Deploying with docker compose ($DEPLOY_MODE)"
+ssh "${SSH_OPTS[@]}" "$TARGET" "cd '$REMOTE_DIR' && $COMPOSE_CMD pull && $COMPOSE_CMD up -d --build && $COMPOSE_CMD ps"
+
+echo "✅ Deploy complete: $TARGET:$REMOTE_DIR ($DEPLOY_MODE)"

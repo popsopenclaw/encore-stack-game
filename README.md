@@ -85,8 +85,10 @@ Use the deploy script:
 Optional env vars:
 
 ```bash
-SSH_PORT=22 SSH_KEY=~/.ssh/id_ed25519 ENV_FILE=.env ./scripts/deploy-vm.sh user@your-vm-ip
+SSH_PORT=22 SSH_KEY=~/.ssh/id_ed25519 ENV_FILE=.env DEPLOY_MODE=prod ./scripts/deploy-vm.sh user@your-vm-ip
 ```
+
+`DEPLOY_MODE=prod` uses `docker-compose.prod.yml` overlay (recommended for VM).
 
 What it does:
 - syncs project files to your VM via `rsync`
