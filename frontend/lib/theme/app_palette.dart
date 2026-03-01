@@ -20,4 +20,11 @@ class AppPalette {
   static const black = Colors.black;
   static const red = Colors.red;
   static const grey = Colors.grey;
+
+  static const textPrimary = Color(0xFF1E1E1E);
+  static const textOnDark = Color(0xFFF5F5F5);
+  static const borderLight = Color(0x42000000);
+  static const borderDark = Color(0x8A000000);
+  static const success = Color(0xFF7CFC98);
+  static const danger = Color(0xFFFF6A6A);
 }

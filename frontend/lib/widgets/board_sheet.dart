@@ -72,7 +72,7 @@ class SideScoreLegend extends StatelessWidget {
             Container(
               width: 26,
               height: 26,
-              decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.black54)),
+              decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppPalette.borderDark)),
             ),
             const SizedBox(width: 6),
             _pill(a),
@@ -95,9 +95,9 @@ class SideScoreLegend extends StatelessWidget {
           const SizedBox(height: 8),
           const Text('BONUS =', style: TextStyle(color: AppPalette.white, fontWeight: FontWeight.w700, fontSize: 20)),
           const SizedBox(height: 8),
-          const _RuleLine('A-O', '+', Colors.lightGreenAccent),
-          const _RuleLine('!', '+1', Colors.lightGreenAccent),
-          const _RuleLine('★', '-2', Colors.redAccent),
+          const _RuleLine('A-O', '+', AppPalette.success),
+          const _RuleLine('!', '+1', AppPalette.success),
+          const _RuleLine('★', '-2', AppPalette.danger),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -217,10 +217,10 @@ class BoardGrid extends StatelessWidget {
           decoration: BoxDecoration(
             color: bg ?? AppPalette.white,
             borderRadius: BorderRadius.circular(7),
-            border: Border.all(color: Colors.black26),
+            border: Border.all(color: AppPalette.borderLight),
           ),
           alignment: Alignment.center,
-          child: Text(t, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 19, color: fg ?? Colors.black87)),
+          child: Text(t, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 19, color: fg ?? AppPalette.textPrimary)),
         );
 
     return SingleChildScrollView(
@@ -228,7 +228,7 @@ class BoardGrid extends StatelessWidget {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(15, (i) => pill(letters[i], fg: i == 7 ? AppPalette.red : Colors.black87)),
+            children: List.generate(15, (i) => pill(letters[i], fg: i == 7 ? AppPalette.red : AppPalette.textPrimary)),
           ),
           ...List.generate(maxY + 1, (y) {
             return Row(
@@ -243,7 +243,7 @@ class BoardGrid extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: colorFor((c['color'] as String)),
                     borderRadius: BorderRadius.circular(7),
-                    border: Border.all(color: Colors.black38),
+                    border: Border.all(color: AppPalette.borderDark),
                   ),
                   child: (c['starred'] as bool) ? const Icon(Icons.star, size: 16, color: AppPalette.white) : null,
                 );
@@ -253,11 +253,11 @@ class BoardGrid extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(15, (i) => pill('${topPts[i]}', fg: i == 7 ? AppPalette.red : Colors.black87)),
+            children: List.generate(15, (i) => pill('${topPts[i]}', fg: i == 7 ? AppPalette.red : AppPalette.textPrimary)),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(15, (i) => pill('${lowPts[i]}', fg: i == 7 ? AppPalette.red : Colors.black87)),
+            children: List.generate(15, (i) => pill('${lowPts[i]}', fg: i == 7 ? AppPalette.red : AppPalette.textPrimary)),
           ),
         ],
       ),
