@@ -30,6 +30,8 @@ In GitHub OAuth App:
 docker compose up -d --build
 ```
 
+`docker compose` now includes a **migrate** service that runs Entity Framework migrations automatically before backend startup.
+
 Production-style run (no DB/cache public ports):
 
 ```bash
@@ -141,5 +143,5 @@ Legacy session endpoints (still available):
 ## Notes
 
 - This scaffold targets mobile + native desktop only (no web build requested).
-- EF Core uses `EnsureCreated` for fast bootstrap (replace with migrations for production).
+- EF Core uses migrations (see `backend/Encore.Api/Data/Migrations`) and they are applied by the compose `migrate` service.
 - Session values in Valkey expire after 7 days by default.

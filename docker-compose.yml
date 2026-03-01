@@ -31,6 +31,18 @@ services:
       timeout: 5s
       retries: 10
 
+  migrate:
+    build:
+      context: ./backend/Encore.Api
+      dockerfile: Dockerfile.migrations
+    container_name: encore-migrate
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB:-encore_game};Username=${POSTGRES_USER:-encore};Password=${POSTGRES_PASSWORD:-encore}
+
   backend:
     build:
       context: ./backend/Encore.Api
@@ -42,6 +54,8 @@ services:
         condition: service_healthy
       valkey:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB:-encore_game};Username=${POSTGRES_USER:-encore};Password=${POSTGRES_PASSWORD:-encore}
