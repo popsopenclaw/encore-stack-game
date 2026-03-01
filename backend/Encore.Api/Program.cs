@@ -1,6 +1,8 @@
 using System.Text;
 using Encore.Api.Data;
 using Encore.Api.Services;
+using Encore.Application.Auth;
+using Encore.Application.Gameplay;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -25,6 +27,8 @@ builder.Services.AddSingleton<BoardTemplateProvider>();
 builder.Services.AddScoped<GameSessionService>();
 builder.Services.AddScoped<IGameStateStore, GameSessionService>();
 builder.Services.AddScoped<EncoreRulesEngine>();
+builder.Services.AddScoped<IAuthUseCase, AuthUseCase>();
+builder.Services.AddScoped<IGameplayUseCase, GameplayUseCase>();
 
 var jwtKey = builder.Configuration["Jwt:SigningKey"] ?? throw new InvalidOperationException("Missing Jwt:SigningKey");
 var issuer = builder.Configuration["Jwt:Issuer"] ?? "encore-api";
