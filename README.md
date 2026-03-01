@@ -122,6 +122,7 @@ Legacy session endpoints (still available):
 - Local CI script: `./scripts/ci-local.sh`
 - CI pipeline: `.github/workflows/ci.yml` (backend build+tests, frontend analyze)
 - Rules audit matrix: `RULES_VALIDATION.md`
+- API turn sequence: `TURN_FLOW.md`
 - VM backup script (run on server): `./scripts/backup-vm.sh`
 
 ## Notes
