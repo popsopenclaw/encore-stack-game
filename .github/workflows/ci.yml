@@ -1,0 +1,35 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Restore
+        run: dotnet restore backend/Encore.Api/Encore.Api.csproj
+      - name: Build
+        run: dotnet build backend/Encore.Api/Encore.Api.csproj --no-restore
+      - name: Test
+        run: dotnet test backend/Encore.Api.Tests/Encore.Api.Tests.csproj --no-build --verbosity normal
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Flutter pub get
+        run: flutter pub get
+        working-directory: frontend
+      - name: Flutter analyze
+        run: flutter analyze
+        working-directory: frontend
