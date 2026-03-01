@@ -16,7 +16,7 @@ public class GameSessionService(IConnectionMultiplexer redis) : IGameStateStore
     {
         var value = await _db.StringGetAsync(Key(gameKey, sessionId));
         if (!value.HasValue) return default;
-        return JsonSerializer.Deserialize<T>(value!);
+        return JsonSerializer.Deserialize<T>(value.ToString());
     }
 
     // Backward-compatible helpers for Encore
@@ -43,7 +43,7 @@ public class GameSessionService(IConnectionMultiplexer redis) : IGameStateStore
     {
         var value = await _db.StringGetAsync(Key("encore", sessionId));
         if (!value.HasValue) return null;
-        return JsonSerializer.Deserialize<GameSession>(value!);
+        return JsonSerializer.Deserialize<GameSession>(value.ToString());
     }
 
     public async Task<GameSession?> UpdateStateAsync(string sessionId, string stateJson)
