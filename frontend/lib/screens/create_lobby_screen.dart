@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 
 import '../app/router.dart';
+import '../widgets/app_shell.dart';
+import '../widgets/common_card.dart';
 
 class CreateLobbyScreen extends StatelessWidget {
   const CreateLobbyScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Create Lobby')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
+    return AppShell(
+      title: 'Create Lobby',
+      child: CommonCard(
         child: Column(
           children: [
             const TextField(decoration: InputDecoration(labelText: 'Lobby name')),

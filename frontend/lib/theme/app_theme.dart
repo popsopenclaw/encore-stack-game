@@ -14,7 +14,10 @@ class AppTheme {
         cardTheme: CardThemeData(
           color: AppPalette.cardBg,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          margin: const EdgeInsets.all(12),
+          margin: const EdgeInsets.all(10),
+        ),
+        inputDecorationTheme: const InputDecorationTheme(
+          border: OutlineInputBorder(),
         ),
       );
 }
