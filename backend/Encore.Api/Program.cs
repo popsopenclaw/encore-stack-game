@@ -75,3 +75,5 @@ app.MapControllers();
 app.MapGet("/health", () => Results.Ok(new { ok = true }));
 
 app.Run();
+
+public partial class Program { }

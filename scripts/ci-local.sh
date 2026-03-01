@@ -5,10 +5,10 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 echo "== backend build =="
-dotnet build backend/Encore.Api/Encore.Api.csproj
+dotnet build backend/Encore.sln
 
-echo "== backend tests =="
-dotnet test backend/Encore.Api.Tests/Encore.Api.Tests.csproj
+echo "== backend tests (unit + integration) =="
+dotnet test backend/Encore.sln --no-build
 
 echo "== frontend analyze =="
 (
