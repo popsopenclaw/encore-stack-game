@@ -57,6 +57,29 @@ public class LobbyController(ILobbyUseCase lobbyUseCase, LobbyRealtimeNotifier n
     public async Task<IActionResult> List([FromQuery] int limit = 20)
         => Ok(await lobbyUseCase.ListAsync(limit));
 
+    [HttpPatch("{code}")]
+    public async Task<IActionResult> Update(string code, [FromBody] UpdateLobbyRequest request)
+    {
+        try
+        {
+            var lobby = await lobbyUseCase.UpdateAsync(GetAccountId(), code, request);
+            await notifier.LobbyUpdatedAsync(lobby);
+            return Ok(lobby);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     [HttpPost("{code}/leave")]
     public async Task<IActionResult> Leave(string code)
     {

@@ -67,6 +67,32 @@ public class LobbyUseCase(ILobbyRepository repository) : ILobbyUseCase
         return list.Select(ToDto).ToList();
     }
 
+    public async Task<LobbyDto> UpdateAsync(Guid accountId, string code, UpdateLobbyRequest request, CancellationToken cancellationToken = default)
+    {
+        var lobby = await repository.GetByCodeAsync(code.Trim().ToUpperInvariant(), cancellationToken)
+                    ?? throw new KeyNotFoundException("Lobby not found");
+
+        if (lobby.HostAccountId != accountId)
+            throw new UnauthorizedAccessException("Only host can update lobby settings");
+
+        if (!string.IsNullOrWhiteSpace(request.Name))
+            lobby.Name = request.Name.Trim();
+
+        if (request.MaxPlayers.HasValue)
+        {
+            var next = request.MaxPlayers.Value;
+            if (next < 1 || next > 6)
+                throw new InvalidOperationException("Max players must be 1..6");
+            if (next < lobby.Members.Count)
+                throw new InvalidOperationException("Max players cannot be less than current member count");
+
+            lobby.MaxPlayers = next;
+        }
+
+        await repository.SaveChangesAsync(cancellationToken);
+        return ToDto(lobby);
+    }
+
     public async Task LeaveAsync(Guid accountId, string code, CancellationToken cancellationToken = default)
     {
         var lobby = await repository.GetByCodeAsync(code.Trim().ToUpperInvariant(), cancellationToken)

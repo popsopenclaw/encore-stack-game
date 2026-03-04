@@ -34,6 +34,23 @@ public class FakeLobbyUseCase : ILobbyUseCase
     public Task<List<LobbyDto>> ListAsync(int limit = 20, CancellationToken cancellationToken = default)
         => Task.FromResult(_store.Values.Take(limit).ToList());
 
+    public Task<LobbyDto> UpdateAsync(Guid accountId, string code, UpdateLobbyRequest request, CancellationToken cancellationToken = default)
+    {
+        if (!_store.TryGetValue(code, out var lobby))
+            throw new KeyNotFoundException();
+
+        if (lobby.Members.FirstOrDefault()?.AccountId != accountId)
+            throw new UnauthorizedAccessException("Only host can update lobby settings");
+
+        var updated = lobby with
+        {
+            Name = string.IsNullOrWhiteSpace(request.Name) ? lobby.Name : request.Name.Trim(),
+            MaxPlayers = request.MaxPlayers ?? lobby.MaxPlayers
+        };
+        _store[code] = updated;
+        return Task.FromResult(updated);
+    }
+
     public Task LeaveAsync(Guid accountId, string code, CancellationToken cancellationToken = default)
     {
         if (_store.TryGetValue(code, out var lobby))

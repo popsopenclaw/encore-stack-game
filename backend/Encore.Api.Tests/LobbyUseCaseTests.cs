@@ -42,6 +42,37 @@ public class LobbyUseCaseTests
         Assert.Null(lobby);
     }
 
+    [Fact]
+    public async Task NonHostCannotUpdateLobby()
+    {
+        var repo = new FakeLobbyRepository();
+        var useCase = new LobbyUseCase(repo);
+
+        var hostId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4, "Host"));
+        await useCase.JoinAsync(userId, new JoinLobbyRequest(created.Code, "User"));
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            useCase.UpdateAsync(userId, created.Code, new UpdateLobbyRequest("Nope", 4)));
+    }
+
+    [Fact]
+    public async Task HostCanUpdateLobbySettings()
+    {
+        var repo = new FakeLobbyRepository();
+        var useCase = new LobbyUseCase(repo);
+
+        var hostId = Guid.NewGuid();
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4, "Host"));
+
+        var updated = await useCase.UpdateAsync(hostId, created.Code, new UpdateLobbyRequest("Renamed", 5));
+
+        Assert.Equal("Renamed", updated.Name);
+        Assert.Equal(5, updated.MaxPlayers);
+    }
+
     private class FakeLobbyRepository : ILobbyRepository
     {
         private readonly List<LobbyEntity> _lobbies = [];

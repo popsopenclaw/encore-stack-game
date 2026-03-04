@@ -43,6 +43,9 @@ public class LobbyContractTests : IClassFixture<ApiWebFactory>
         Assert.NotNull(lobbies);
         Assert.Contains(lobbies!, l => l.Code == created.Code);
 
+        var patch = await _client.PatchAsJsonAsync($"/api/lobby/{created.Code}", new UpdateLobbyRequest("Renamed", 4));
+        patch.EnsureSuccessStatusCode();
+
         var leave = await _client.PostAsync($"/api/lobby/{created.Code}/leave", null);
         Assert.Equal(HttpStatusCode.NoContent, leave.StatusCode);
     }
