@@ -25,6 +25,15 @@ public class LobbyRepositoryAdapter(AppDbContext db) : ILobbyRepository
     public Task<List<Lobby>> ListStaleAsync(DateTimeOffset threshold, CancellationToken cancellationToken = default)
         => db.Lobbies.Include(l => l.Members).Where(l => l.CreatedAt < threshold).ToListAsync(cancellationToken);
 
+    public async Task<int> RemoveStaleAsync(DateTimeOffset threshold, CancellationToken cancellationToken = default)
+    {
+        var stale = await db.Lobbies.Where(l => l.CreatedAt < threshold).ToListAsync(cancellationToken);
+        if (stale.Count == 0) return 0;
+        db.Lobbies.RemoveRange(stale);
+        await db.SaveChangesAsync(cancellationToken);
+        return stale.Count;
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken = default)
         => db.SaveChangesAsync(cancellationToken);
 

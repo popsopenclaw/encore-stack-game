@@ -58,24 +58,17 @@ public class LobbyUseCase(ILobbyRepository repository, IConfiguration configurat
 
     public async Task<LobbyDto?> GetAsync(string code, CancellationToken cancellationToken = default)
     {
-        await CleanupStaleLobbies(cancellationToken);
-
         var lobby = await repository.GetByCodeAsync(code.Trim().ToUpperInvariant(), cancellationToken);
         if (lobby is null) return null;
 
         if (lobby.CreatedAt < StaleThreshold())
-        {
-            repository.RemoveLobby(lobby);
-            await repository.SaveChangesAsync(cancellationToken);
             return null;
-        }
 
         return ToDto(lobby);
     }
 
     public async Task<List<LobbyDto>> ListAsync(int limit = 20, CancellationToken cancellationToken = default)
     {
-        await CleanupStaleLobbies(cancellationToken);
         var list = await repository.ListOpenAsync(limit, cancellationToken);
         return list.Where(l => l.CreatedAt >= StaleThreshold()).Select(ToDto).ToList();
     }
@@ -147,17 +140,6 @@ public class LobbyUseCase(ILobbyRepository repository, IConfiguration configurat
         var hours = configuration.GetValue<int?>("Lobby:StaleHours") ?? 24;
         if (hours < 1) hours = 1;
         return DateTimeOffset.UtcNow.AddHours(-hours);
-    }
-
-    private async Task CleanupStaleLobbies(CancellationToken cancellationToken)
-    {
-        var stale = await repository.ListStaleAsync(StaleThreshold(), cancellationToken);
-        if (stale.Count == 0) return;
-
-        foreach (var lobby in stale)
-            repository.RemoveLobby(lobby);
-
-        await repository.SaveChangesAsync(cancellationToken);
     }
 
     private static string GenerateCode()

@@ -46,6 +46,7 @@ builder.Services.AddScoped<IAuthUseCase, AuthUseCase>();
 builder.Services.AddScoped<IGameplayUseCase, GameplayUseCase>();
 builder.Services.AddScoped<ILobbyUseCase, LobbyUseCase>();
 builder.Services.AddScoped<LobbyRealtimeNotifier>();
+builder.Services.AddHostedService<LobbyCleanupHostedService>();
 
 var jwtKey = builder.Configuration["Jwt:SigningKey"] ?? throw new InvalidOperationException("Missing Jwt:SigningKey");
 var issuer = builder.Configuration["Jwt:Issuer"] ?? "encore-api";

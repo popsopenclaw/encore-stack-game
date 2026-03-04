@@ -76,7 +76,7 @@ public class LobbyUseCaseTests
 
 
     [Fact]
-    public async Task StaleLobbiesAreNotListed_AndAreCleanedUp()
+    public async Task StaleLobbiesAreNotListed_AndRemainForAsyncCleanup()
     {
         var repo = new FakeLobbyRepository();
         var useCase = new LobbyUseCase(repo, BuildConfig(staleHours: 1));
@@ -92,7 +92,7 @@ public class LobbyUseCaseTests
         Assert.DoesNotContain(list, l => l.Code == created.Code);
 
         var stillThere = await repo.GetByCodeAsync(created.Code);
-        Assert.Null(stillThere);
+        Assert.NotNull(stillThere);
     }
 
     private static IConfiguration BuildConfig(int staleHours)
@@ -125,6 +125,12 @@ public class LobbyUseCaseTests
 
         public Task<List<LobbyEntity>> ListStaleAsync(DateTimeOffset threshold, CancellationToken cancellationToken = default)
             => Task.FromResult(_lobbies.Where(l => l.CreatedAt < threshold).ToList());
+
+        public Task<int> RemoveStaleAsync(DateTimeOffset threshold, CancellationToken cancellationToken = default)
+        {
+            var count = _lobbies.RemoveAll(l => l.CreatedAt < threshold);
+            return Task.FromResult(count);
+        }
 
         public void RemoveMember(LobbyMember member)
         {
