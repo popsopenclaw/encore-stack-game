@@ -124,6 +124,8 @@ class LobbyController extends ChangeNotifier {
       await _realtime.disconnect();
       realtimeStatus = RealtimeStatus.disconnected;
       status = 'Session expired. Please login again.';
+    } on ApiErrorException catch (e) {
+      status = '$label failed: ${_messageForApiError(e)}';
     } catch (e) {
       status = '$label failed: $e';
     }
@@ -138,6 +140,19 @@ class LobbyController extends ChangeNotifier {
     lobbies = const [];
     status = 'Logged out';
     notifyListeners();
+  }
+
+  String _messageForApiError(ApiErrorException e) {
+    switch (e.code) {
+      case ApiErrorCode.forbidden:
+        return 'You do not have permission for this action.';
+      case ApiErrorCode.notFound:
+        return 'Lobby not found.';
+      case ApiErrorCode.redisUnavailable:
+        return 'Realtime services are temporarily unavailable. Try again.';
+      default:
+        return e.message;
+    }
   }
 
   @override

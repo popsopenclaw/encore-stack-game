@@ -219,8 +219,26 @@ class GameController extends ChangeNotifier {
       await authSessionController.logout();
       await lobbyController.resetForLogout();
       _setStatus('Session expired. Please login again.');
+    } on ApiErrorException catch (e) {
+      _setStatus('$action failed: ${_messageForApiError(e)}');
     } catch (e) {
       _setStatus('$action failed: $e');
+    }
+  }
+
+  String _messageForApiError(ApiErrorException e) {
+    switch (e.code) {
+      case ApiErrorCode.forbidden:
+        return 'You do not have permission for this action.';
+      case ApiErrorCode.notFound:
+        return 'Game session was not found.';
+      case ApiErrorCode.invalidOperation:
+      case ApiErrorCode.invalidRequest:
+        return e.message;
+      case ApiErrorCode.redisUnavailable:
+        return 'Realtime/cache service is unavailable. Try again.';
+      default:
+        return e.message;
     }
   }
 

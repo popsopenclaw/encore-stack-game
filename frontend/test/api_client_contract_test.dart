@@ -32,11 +32,29 @@ void main() {
       expect((result['colorDice'] as List).length, 2);
     });
 
-    test('throws on non-2xx response', () async {
-      final mock = MockClient((request) async => http.Response('bad request', 400));
+    test('throws typed ApiErrorException on structured error response', () async {
+      final mock = MockClient((request) async {
+        return http.Response(
+          jsonEncode({
+            'code': 'forbidden',
+            'message': 'Only host can start a match',
+            'correlationId': 'cid-1',
+          }),
+          403,
+        );
+      });
       final api = ApiClient(baseUrl: 'http://localhost:8080', httpClient: mock);
 
-      expect(() => api.getGitHubLoginUrl(), throwsException);
+      expect(
+        () => api.getGitHubLoginUrl(),
+        throwsA(
+          isA<ApiErrorException>()
+              .having((e) => e.statusCode, 'statusCode', 403)
+              .having((e) => e.code, 'code', ApiErrorCode.forbidden)
+              .having((e) => e.message, 'message', contains('Only host'))
+              .having((e) => e.correlationId, 'correlationId', 'cid-1'),
+        ),
+      );
     });
   });
 }

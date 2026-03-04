@@ -7,6 +7,35 @@ class UnauthorizedApiException implements Exception {
   String toString() => 'UnauthorizedApiException';
 }
 
+enum ApiErrorCode {
+  invalidRequest,
+  invalidOperation,
+  notFound,
+  forbidden,
+  redisUnavailable,
+  internalError,
+  unknown,
+}
+
+class ApiErrorException implements Exception {
+  ApiErrorException({
+    required this.statusCode,
+    required this.code,
+    required this.message,
+    this.correlationId,
+  });
+
+  final int statusCode;
+  final ApiErrorCode code;
+  final String message;
+  final String? correlationId;
+
+  bool get isRetryable => code == ApiErrorCode.redisUnavailable || statusCode >= 500;
+
+  @override
+  String toString() => 'ApiErrorException($statusCode, $code, $message, cid=$correlationId)';
+}
+
 class ApiClient {
   ApiClient({required this.baseUrl, this.jwt, http.Client? httpClient}) : _http = httpClient ?? http.Client();
 
@@ -155,25 +184,58 @@ class ApiClient {
 
   Future<void> leaveLobby(String code) async {
     final r = await _http.post(_u('/api/lobby/$code/leave'), headers: _jsonHeaders);
-    if (r.statusCode == 401) throw UnauthorizedApiException();
-    if (r.statusCode >= 400) {
-      throw Exception('HTTP ${r.statusCode}: ${r.body}');
-    }
+    _throwIfError(r);
   }
 
   Map<String, dynamic> _decodeMap(http.Response r) {
-    if (r.statusCode == 401) throw UnauthorizedApiException();
-    if (r.statusCode >= 400) {
-      throw Exception('HTTP ${r.statusCode}: ${r.body}');
-    }
+    _throwIfError(r);
     return jsonDecode(r.body) as Map<String, dynamic>;
   }
 
   List<dynamic> _decodeList(http.Response r) {
-    if (r.statusCode == 401) throw UnauthorizedApiException();
-    if (r.statusCode >= 400) {
-      throw Exception('HTTP ${r.statusCode}: ${r.body}');
-    }
+    _throwIfError(r);
     return jsonDecode(r.body) as List<dynamic>;
+  }
+
+  void _throwIfError(http.Response r) {
+    if (r.statusCode == 401) throw UnauthorizedApiException();
+    if (r.statusCode < 400) return;
+
+    final body = r.body;
+    String message = body.isNotEmpty ? body : 'HTTP ${r.statusCode}';
+    ApiErrorCode code = ApiErrorCode.unknown;
+    String? correlationId;
+
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) {
+        final rawCode = decoded['code']?.toString();
+        final rawMessage = decoded['message']?.toString();
+        correlationId = decoded['correlationId']?.toString();
+        if (rawCode != null) code = _mapCode(rawCode);
+        if (rawMessage != null && rawMessage.isNotEmpty) message = rawMessage;
+      }
+    } catch (_) {
+      // fallback to raw body message
+    }
+
+    throw ApiErrorException(
+      statusCode: r.statusCode,
+      code: code,
+      message: message,
+      correlationId: correlationId,
+    );
+  }
+
+  ApiErrorCode _mapCode(String code) {
+    return switch (code) {
+      'invalid_request' => ApiErrorCode.invalidRequest,
+      'invalid_operation' => ApiErrorCode.invalidOperation,
+      'not_found' => ApiErrorCode.notFound,
+      'forbidden' => ApiErrorCode.forbidden,
+      'redis_unavailable' => ApiErrorCode.redisUnavailable,
+      'internal_error' => ApiErrorCode.internalError,
+      _ => ApiErrorCode.unknown,
+    };
   }
 }
