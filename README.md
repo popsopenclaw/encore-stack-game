@@ -1,6 +1,6 @@
 # Encore Stack Game
 
-Flutter frontend + .NET 8 backend using Docker Compose, Valkey for game sessions, and PostgreSQL for account data.
+Flutter frontend + .NET 10 backend using Docker Compose, Valkey for game sessions, and PostgreSQL for account data.
 
 ## Stack
 
@@ -132,6 +132,15 @@ Gameplay (Bearer JWT):
 - `POST /api/gameplay/{sessionId}/action` -> player submits move (or pass)
 - `POST /api/gameplay/{sessionId}/encore` -> enables one extra round after end trigger
 - `GET /api/gameplay/{sessionId}/score` -> score breakdown
+- `GET /api/gameplay/{sessionId}/events` -> turn/audit timeline
+
+Lobby + realtime (Bearer JWT):
+- `POST /api/lobby` -> create lobby
+- `POST /api/lobby/join` -> join lobby by code
+- `GET /api/lobby/{code}` -> get lobby state
+- `GET /api/lobby?limit=20` -> list lobbies
+- `POST /api/lobby/{code}/leave` -> leave lobby
+- `WS /hubs/lobby` (SignalR) -> realtime `lobbyUpdated` events
 
 Legacy session endpoints (still available):
 - `POST /api/gamesessions`
@@ -151,5 +160,5 @@ Legacy session endpoints (still available):
 ## Notes
 
 - This scaffold targets mobile + native desktop only (no web build requested).
-- EF Core uses migrations (see `backend/Encore.Api/Data/Migrations`) and they are applied by the compose `migrate` service.
+- EF Core uses migrations (see `backend/Encore.Infrastructure/Data/Migrations`) and they are applied by the compose `migrate` service.
 - Session values in Valkey expire after 7 days by default.
