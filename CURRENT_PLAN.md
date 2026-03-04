@@ -1,38 +1,43 @@
 # CURRENT_PLAN.md
 
-Goal: implement the remaining roadmap in a safe, incremental order while keeping backend/frontend compatibility at every step.
+Goal: Production-readiness hardening for reliable real-world multiplayer usage.
 
-## Order of implementation (recommended)
+## Phase 1 — Auth/session resilience
+- [ ] Add token/session validation middleware behavior checks (401 flow consistency).
+- [ ] Add frontend auth guard + session bootstrap strategy (recover persisted JWT cleanly).
+- [ ] Add explicit logout flow (clear JWT + disconnect realtime + reset local state).
+- [ ] Add integration tests for auth-protected endpoints with missing/invalid token.
 
-1. **Real multiplayer backend foundation (Lobby + Realtime) [DONE]**
-   - [x] Add persistent lobby model in backend (Postgres via EF Core)
-   - [x] Add lobby service/use-case and HTTP endpoints (create/join/leave/list)
-   - [x] Add SignalR hub for lobby/game realtime updates
-   - [x] Add integration tests for lobby endpoints + hub handshake
+## Phase 2 — Realtime reliability
+- [ ] Add frontend SignalR reconnect strategy with exponential backoff.
+- [ ] Re-join lobby group automatically after reconnect.
+- [ ] Add connection status indicator in UI (connecting/connected/reconnecting/disconnected).
+- [ ] Add backend-safe idempotency for join/leave notifications to avoid duplicate state churn.
 
-2. **Frontend multiplayer flow wiring [DONE]**
-   - [x] Replace frontend-only lobby state with backend-backed lobby API
-   - [x] Add realtime subscription client (SignalR)
-   - [x] Reflect lobby participant updates in Home/Create/Join screens
+## Phase 3 — Lobby governance + permissions
+- [ ] Enforce host-only actions where needed (start game, kick, settings changes).
+- [ ] Add host transfer when current host leaves.
+- [ ] Add lobby lifecycle rules (empty lobby cleanup, stale lobby expiration policy).
+- [ ] Add integration tests for permission boundaries and host transfer scenarios.
 
-3. **Game interaction UX rework (contract-aligned) [DONE]**
-   - [x] Add phase-aware controls: select dice, pass, submit action
-   - [x] Add board cell selection + move payload builder
-   - [x] Add clear error handling surfaced from backend validations
+## Phase 4 — Gameplay robustness
+- [ ] Add optimistic UI safeguards + rollback on server rejection.
+- [ ] Add explicit phase-lock UI (disable invalid actions by phase).
+- [ ] Add conflict-safe refresh (if state changed remotely, merge/refresh flow).
+- [ ] Extend regression suite with multi-turn scenarios and pass/encore edge-cases.
 
-4. **Replay + audit timeline UI [DONE]**
-   - [x] Show events stream in-game from `/events`
-   - [x] Add score panel and turn history widgets
+## Phase 5 — End-to-end confidence
+- [ ] Add API-level E2E playthrough test (create lobby -> join -> start -> turns -> score/events).
+- [ ] Add frontend integration/widget flow tests for lobby->game journey.
+- [ ] Add smoke script for local verification (single command) before release.
 
-5. **Rule-fidelity hardening + regression coverage [DONE]**
-   - [x] Add more regression cases from PDF scenarios
-   - [x] Add frontend API contract parsing tests for core endpoints
+## Phase 6 — Ops hardening for VM deploy
+- [ ] Add health/readiness docs and checks for API + DB + Valkey + migrate service.
+- [ ] Add backup/restore validation drill docs and script checks.
+- [ ] Add minimal runtime observability (structured logs + key error paths).
+- [ ] Add release checklist (env vars, migrations, rollback procedure).
 
-6. **Polish and cleanup [DONE]**
-   - [x] Refine screen theme fidelity to board references
-   - [x] Remove dead code and update docs (`README`, `TURN_FLOW`, `RULES_VALIDATION`)
-
-## Execution notes
-- Always keep `scripts/ci-local.sh` green after each phase.
-- Ship in small commits by phase so rollback is easy.
-- Do not break existing API paths currently used by frontend.
+## Deliverable rule (for every phase)
+- [ ] Keep `./scripts/ci-local.sh` green.
+- [ ] Commit per step with clear message.
+- [ ] Update docs as behavior changes.
