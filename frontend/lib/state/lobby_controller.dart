@@ -3,10 +3,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/backend_config.dart';
 import '../services/api_client.dart';
+import '../services/lobby_realtime_service.dart';
 
 final lobbyController = LobbyController();
 
 class LobbyController extends ChangeNotifier {
+  final _realtime = LobbyRealtimeService();
+
   String? lobbyCode;
   String lobbyName = '';
   int maxPlayers = 6;
@@ -21,6 +24,26 @@ class LobbyController extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _backendUrl = prefs.getString(kBackendPrefKey) ?? kBackendUrlFromBuild;
     _jwt = prefs.getString(kJwtPrefKey);
+
+    if (_jwt != null && _jwt!.isNotEmpty) {
+      await _realtime.connect(
+        backendUrl: _backendUrl,
+        jwt: _jwt,
+        onLobbyUpdated: (lobby) {
+          if (lobbyCode != null && (lobby['code']?.toString().toUpperCase() == lobbyCode)) {
+            _bindLobby(lobby);
+          }
+          final idx = lobbies.indexWhere((l) => (l['code']?.toString().toUpperCase()) == (lobby['code']?.toString().toUpperCase()));
+          if (idx >= 0) {
+            lobbies[idx] = lobby;
+          } else {
+            lobbies = [lobby, ...lobbies];
+          }
+          notifyListeners();
+        },
+      );
+    }
+
     await refreshLobbies();
   }
 
@@ -37,6 +60,7 @@ class LobbyController extends ChangeNotifier {
       await refreshSessionConfig();
       final lobby = await _api.createLobby(name: name, maxPlayers: max.clamp(1, 6), hostDisplayName: hostDisplayName);
       _bindLobby(lobby);
+      if (lobbyCode != null) await _realtime.joinLobbyGroup(lobbyCode!);
       await refreshLobbies();
     });
   }
@@ -46,6 +70,7 @@ class LobbyController extends ChangeNotifier {
       await refreshSessionConfig();
       final lobby = await _api.joinLobby(code: code.trim().toUpperCase(), displayName: name.trim());
       _bindLobby(lobby);
+      if (lobbyCode != null) await _realtime.joinLobbyGroup(lobbyCode!);
       await refreshLobbies();
     });
   }
@@ -54,7 +79,9 @@ class LobbyController extends ChangeNotifier {
     if (lobbyCode == null) return;
     await _withStatus('Leaving lobby', () async {
       await refreshSessionConfig();
-      await _api.leaveLobby(lobbyCode!);
+      final current = lobbyCode!;
+      await _api.leaveLobby(current);
+      await _realtime.leaveLobbyGroup(current);
       lobbyCode = null;
       lobbyName = '';
       await refreshLobbies();
@@ -85,5 +112,11 @@ class LobbyController extends ChangeNotifier {
       status = '$label failed: $e';
     }
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _realtime.disconnect();
+    super.dispose();
   }
 }
