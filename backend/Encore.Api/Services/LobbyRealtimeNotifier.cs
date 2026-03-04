@@ -8,18 +8,26 @@ using StackExchange.Redis;
 
 namespace Encore.Api.Services;
 
-public class LobbyRealtimeNotifier(IHubContext<LobbyHub> hub, IServiceProvider services, IConfiguration configuration)
+public class LobbyRealtimeNotifier(IHubContext<LobbyHub> hub, IServiceProvider services, IConfiguration configuration, ILogger<LobbyRealtimeNotifier> logger)
 {
-    private readonly IDatabase? _db = services.GetService<IConnectionMultiplexer>()?.GetDatabase();
-
     public async Task LobbyUpdatedAsync(LobbyDto lobby)
     {
         var code = lobby.Code.Trim().ToUpperInvariant();
         var payload = JsonSerializer.Serialize(lobby);
         var hash = Sha256(payload);
 
-        // If redis is unavailable (e.g., certain test hosts), skip dedupe but still notify.
-        if (_db is null)
+        IDatabase? db = null;
+        try
+        {
+            db = services.GetService<IConnectionMultiplexer>()?.GetDatabase();
+        }
+        catch (Exception ex)
+        {
+            logger.LogDebug(ex, "Realtime dedupe cache unavailable; proceeding without dedupe for lobby {Code}", code);
+        }
+
+        // If redis is unavailable (e.g., CI/integration hosts), skip dedupe but still notify.
+        if (db is null)
         {
             await hub.Clients.Group(LobbyHub.GroupName(lobby.Code)).SendAsync("lobbyUpdated", lobby);
             return;
@@ -29,12 +37,12 @@ public class LobbyRealtimeNotifier(IHubContext<LobbyHub> hub, IServiceProvider s
         var ttlSeconds = configuration.GetValue<int?>("Lobby:NotifyDedupeTtlSeconds") ?? 300;
         if (ttlSeconds < 30) ttlSeconds = 30;
 
-        var previous = await _db.StringGetAsync(key);
+        var previous = await db.StringGetAsync(key);
         if (previous.HasValue && previous.ToString() == hash)
             return;
 
         await hub.Clients.Group(LobbyHub.GroupName(lobby.Code)).SendAsync("lobbyUpdated", lobby);
-        await _db.StringSetAsync(key, hash, TimeSpan.FromSeconds(ttlSeconds));
+        await db.StringSetAsync(key, hash, TimeSpan.FromSeconds(ttlSeconds));
     }
 
     private static string Sha256(string input)
