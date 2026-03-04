@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../config/backend_config.dart';
 import '../services/api_client.dart';
 import '../services/lobby_realtime_service.dart';
+import 'auth_session_controller.dart';
 
 final lobbyController = LobbyController();
 
@@ -108,6 +109,10 @@ class LobbyController extends ChangeNotifier {
     try {
       await op();
       status = '$label done';
+    } on UnauthorizedApiException {
+      await authSessionController.logout();
+      await _realtime.disconnect();
+      status = 'Session expired. Please login again.';
     } catch (e) {
       status = '$label failed: $e';
     }

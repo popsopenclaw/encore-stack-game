@@ -2,6 +2,11 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+class UnauthorizedApiException implements Exception {
+  @override
+  String toString() => 'UnauthorizedApiException';
+}
+
 class ApiClient {
   ApiClient({required this.baseUrl, this.jwt, http.Client? httpClient}) : _http = httpClient ?? http.Client();
 
@@ -150,12 +155,14 @@ class ApiClient {
 
   Future<void> leaveLobby(String code) async {
     final r = await _http.post(_u('/api/lobby/$code/leave'), headers: _jsonHeaders);
+    if (r.statusCode == 401) throw UnauthorizedApiException();
     if (r.statusCode >= 400) {
       throw Exception('HTTP ${r.statusCode}: ${r.body}');
     }
   }
 
   Map<String, dynamic> _decodeMap(http.Response r) {
+    if (r.statusCode == 401) throw UnauthorizedApiException();
     if (r.statusCode >= 400) {
       throw Exception('HTTP ${r.statusCode}: ${r.body}');
     }
@@ -163,6 +170,7 @@ class ApiClient {
   }
 
   List<dynamic> _decodeList(http.Response r) {
+    if (r.statusCode == 401) throw UnauthorizedApiException();
     if (r.statusCode >= 400) {
       throw Exception('HTTP ${r.statusCode}: ${r.body}');
     }

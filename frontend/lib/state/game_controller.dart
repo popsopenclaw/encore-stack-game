@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../config/backend_config.dart';
 import '../services/api_client.dart';
 import 'auth_session_controller.dart';
+import 'lobby_controller.dart';
 
 class GameController extends ChangeNotifier {
   final backendUrl = TextEditingController(text: kBackendUrlFromBuild);
@@ -195,6 +196,10 @@ class GameController extends ChangeNotifier {
     try {
       await fn();
       _setStatus('$action done');
+    } on UnauthorizedApiException {
+      await authSessionController.logout();
+      await lobbyController.resetForLogout();
+      _setStatus('Session expired. Please login again.');
     } catch (e) {
       _setStatus('$action failed: $e');
     }

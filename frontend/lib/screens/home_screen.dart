@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app/router.dart';
+import '../state/auth_session_controller.dart';
 import '../state/lobby_controller.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/app_shell.dart';
@@ -22,6 +23,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (authSessionController.initialized && !authSessionController.hasSession) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (_) => false);
+      });
+    }
+
     return AppShell(
       title: 'Home',
       actions: [
@@ -29,7 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
         IconButton(onPressed: () => Navigator.pushNamed(context, AppRoutes.settings), icon: const Icon(Icons.settings)),
       ],
       child: AnimatedBuilder(
-        animation: lobbyController,
+        animation: Listenable.merge([lobbyController, authSessionController]),
         builder: (context, _) => Column(
           children: [
             if (lobbyController.lobbyCode != null)
