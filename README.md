@@ -154,9 +154,11 @@ Legacy session endpoints (still available):
 - Local CI script: `./scripts/ci-local.sh`
 - Dependency check script: `./scripts/check-deps.sh`
 - Dependency upgrade script: `./scripts/update-deps.sh`
+- Local smoke script: `./scripts/smoke-local.sh`
 - Rules audit matrix: `RULES_VALIDATION.md`
 - API turn sequence: `TURN_FLOW.md`
 - VM backup script (run on server): `./scripts/backup-vm.sh`
+- Release checklist: `RELEASE_CHECKLIST.md`
 
 ## Notes
 
