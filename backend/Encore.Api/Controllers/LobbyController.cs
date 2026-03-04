@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using Encore.Application.Contracts.Lobby;
 using Encore.Application.Lobby;
+using Encore.Api.Middleware;
 using Encore.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -23,7 +24,7 @@ public class LobbyController(ILobbyUseCase lobbyUseCase, LobbyRealtimeNotifier n
         }
         catch (Exception ex)
         {
-            return BadRequest(new { error = ex.Message });
+            return BadRequest(ApiErrorFactory.Create("invalid_request", ex.Message, HttpContext));
         }
     }
 
@@ -36,13 +37,13 @@ public class LobbyController(ILobbyUseCase lobbyUseCase, LobbyRealtimeNotifier n
             await notifier.LobbyUpdatedAsync(lobby);
             return Ok(lobby);
         }
-        catch (KeyNotFoundException)
+        catch (KeyNotFoundException ex)
         {
-            return NotFound();
+            return NotFound(ApiErrorFactory.Create("not_found", ex.Message, HttpContext));
         }
         catch (Exception ex)
         {
-            return BadRequest(new { error = ex.Message });
+            return BadRequest(ApiErrorFactory.Create("invalid_request", ex.Message, HttpContext));
         }
     }
 
@@ -50,7 +51,9 @@ public class LobbyController(ILobbyUseCase lobbyUseCase, LobbyRealtimeNotifier n
     public async Task<IActionResult> Get(string code)
     {
         var lobby = await lobbyUseCase.GetAsync(code);
-        return lobby is null ? NotFound() : Ok(lobby);
+        return lobby is null
+            ? NotFound(ApiErrorFactory.Create("not_found", "Lobby not found", HttpContext))
+            : Ok(lobby);
     }
 
     [HttpGet]
@@ -66,17 +69,17 @@ public class LobbyController(ILobbyUseCase lobbyUseCase, LobbyRealtimeNotifier n
             await notifier.LobbyUpdatedAsync(lobby);
             return Ok(lobby);
         }
-        catch (KeyNotFoundException)
+        catch (KeyNotFoundException ex)
         {
-            return NotFound();
+            return NotFound(ApiErrorFactory.Create("not_found", ex.Message, HttpContext));
         }
         catch (UnauthorizedAccessException ex)
         {
-            return StatusCode(StatusCodes.Status403Forbidden, new { error = ex.Message });
+            return StatusCode(StatusCodes.Status403Forbidden, ApiErrorFactory.Create("forbidden", ex.Message, HttpContext));
         }
         catch (Exception ex)
         {
-            return BadRequest(new { error = ex.Message });
+            return BadRequest(ApiErrorFactory.Create("invalid_request", ex.Message, HttpContext));
         }
     }
 
@@ -88,17 +91,17 @@ public class LobbyController(ILobbyUseCase lobbyUseCase, LobbyRealtimeNotifier n
             var sessionId = await lobbyUseCase.StartMatchAsync(GetAccountId(), code, request);
             return Ok(new { sessionId });
         }
-        catch (KeyNotFoundException)
+        catch (KeyNotFoundException ex)
         {
-            return NotFound();
+            return NotFound(ApiErrorFactory.Create("not_found", ex.Message, HttpContext));
         }
         catch (UnauthorizedAccessException ex)
         {
-            return StatusCode(StatusCodes.Status403Forbidden, new { error = ex.Message });
+            return StatusCode(StatusCodes.Status403Forbidden, ApiErrorFactory.Create("forbidden", ex.Message, HttpContext));
         }
         catch (Exception ex)
         {
-            return BadRequest(new { error = ex.Message });
+            return BadRequest(ApiErrorFactory.Create("invalid_request", ex.Message, HttpContext));
         }
     }
 
@@ -115,7 +118,6 @@ public class LobbyController(ILobbyUseCase lobbyUseCase, LobbyRealtimeNotifier n
     {
         var sub = User.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value;
         if (Guid.TryParse(sub, out var id)) return id;
-        // for integration/test auth fallback
         return Guid.Parse("11111111-1111-1111-1111-111111111111");
     }
 }

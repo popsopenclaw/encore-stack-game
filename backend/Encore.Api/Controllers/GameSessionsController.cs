@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using Encore.Infrastructure.Services;
 using Encore.Application.Contracts.Game;
+using Encore.Api.Middleware;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,14 +24,18 @@ public class GameSessionsController(GameSessionService gameSessionService) : Con
     public async Task<IActionResult> GetById(string id)
     {
         var session = await gameSessionService.GetAsync(id);
-        return session is null ? NotFound() : Ok(session);
+        return session is null
+            ? NotFound(ApiErrorFactory.Create("not_found", "Game session not found", HttpContext))
+            : Ok(session);
     }
 
     [HttpPut("{id}/state")]
     public async Task<IActionResult> UpdateState(string id, [FromBody] UpdateSessionRequest request)
     {
         var updated = await gameSessionService.UpdateStateAsync(id, request.StateJson);
-        return updated is null ? NotFound() : Ok(updated);
+        return updated is null
+            ? NotFound(ApiErrorFactory.Create("not_found", "Game session not found", HttpContext))
+            : Ok(updated);
     }
 
     private Guid GetAccountId()

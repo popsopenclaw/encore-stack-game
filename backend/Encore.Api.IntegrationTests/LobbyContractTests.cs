@@ -4,6 +4,8 @@ using Encore.Application.Contracts.Lobby;
 
 namespace Encore.Api.IntegrationTests;
 
+public record ApiErrorResponse(string Code, string Message, string? CorrelationId);
+
 public class LobbyContractTests : IClassFixture<ApiWebFactory>
 {
     private readonly HttpClient _client;
@@ -51,5 +53,10 @@ public class LobbyContractTests : IClassFixture<ApiWebFactory>
 
         var startNonHost = await _client.SendAsync(nonHostReq);
         Assert.Equal(HttpStatusCode.Forbidden, startNonHost.StatusCode);
+
+        var err = await startNonHost.Content.ReadFromJsonAsync<ApiErrorResponse>();
+        Assert.NotNull(err);
+        Assert.Equal("forbidden", err!.Code);
+        Assert.False(string.IsNullOrWhiteSpace(err.Message));
     }
 }
