@@ -19,3 +19,12 @@ This is the API order for one complete turn:
 - Number joker resolves only to 1..5.
 - Start must touch column H.
 - Scoring endpoint: `GET /api/gameplay/{sessionId}/score`.
+- Events timeline endpoint: `GET /api/gameplay/{sessionId}/events`.
+
+## Lobby + realtime flow
+
+1. Create lobby: `POST /api/lobby`
+2. Join lobby: `POST /api/lobby/join`
+3. Subscribe realtime group on SignalR hub `/hubs/lobby`
+4. Receive `lobbyUpdated` events as members join/leave
+5. Leave lobby: `POST /api/lobby/{code}/leave`

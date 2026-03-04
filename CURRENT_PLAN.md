@@ -24,13 +24,13 @@ Goal: implement the remaining roadmap in a safe, incremental order while keeping
    - [x] Show events stream in-game from `/events`
    - [x] Add score panel and turn history widgets
 
-5. **Rule-fidelity hardening + regression coverage [PARTIAL]**
+5. **Rule-fidelity hardening + regression coverage [DONE]**
    - [x] Add more regression cases from PDF scenarios
-   - [ ] Add frontend API contract parsing tests for core endpoints
+   - [x] Add frontend API contract parsing tests for core endpoints
 
-6. **Polish and cleanup [IN PROGRESS]**
+6. **Polish and cleanup [DONE]**
    - [x] Refine screen theme fidelity to board references
-   - [ ] Remove dead code and update docs (`README`, `TURN_FLOW`, `RULES_VALIDATION`)
+   - [x] Remove dead code and update docs (`README`, `TURN_FLOW`, `RULES_VALIDATION`)
 
 ## Execution notes
 - Always keep `scripts/ci-local.sh` green after each phase.
