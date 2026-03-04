@@ -104,22 +104,32 @@ class _GameScreenState extends State<GameScreen> {
                             child: const Text('Load Available Dice'),
                           ),
                           const SizedBox(height: 6),
-                          DropdownButtonFormField<String>(
-                            value: controller.selectedColorDie,
-                            items: controller.availableColorDice
-                                .map((d) => DropdownMenuItem(value: d, child: Text(d)))
-                                .toList(),
-                            onChanged: controller.setSelectedColorDie,
+                          InputDecorator(
                             decoration: const InputDecoration(labelText: 'Selected Color Die'),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                isExpanded: true,
+                                value: controller.selectedColorDie,
+                                items: controller.availableColorDice
+                                    .map((d) => DropdownMenuItem(value: d, child: Text(d)))
+                                    .toList(),
+                                onChanged: controller.setSelectedColorDie,
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 6),
-                          DropdownButtonFormField<String>(
-                            value: controller.selectedNumberDie,
-                            items: controller.availableNumberDice
-                                .map((d) => DropdownMenuItem(value: d, child: Text(d)))
-                                .toList(),
-                            onChanged: controller.setSelectedNumberDie,
+                          InputDecorator(
                             decoration: const InputDecoration(labelText: 'Selected Number Die'),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                isExpanded: true,
+                                value: controller.selectedNumberDie,
+                                items: controller.availableNumberDice
+                                    .map((d) => DropdownMenuItem(value: d, child: Text(d)))
+                                    .toList(),
+                                onChanged: controller.setSelectedNumberDie,
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 6),
                           Wrap(
