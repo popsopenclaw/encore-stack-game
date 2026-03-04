@@ -159,6 +159,8 @@ Legacy session endpoints (still available):
 - Rules audit matrix: `RULES_VALIDATION.md`
 - API turn sequence: `TURN_FLOW.md`
 - VM backup script (run on server): `./scripts/backup-vm.sh`
+- Backup verification script: `./scripts/verify-backup.sh`
+- Backup/restore drill runbook: `BACKUP_RESTORE_DRILL.md`
 - Release checklist: `RELEASE_CHECKLIST.md`
 
 ## Notes
