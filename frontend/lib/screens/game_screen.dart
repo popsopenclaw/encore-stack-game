@@ -98,6 +98,38 @@ class _GameScreenState extends State<GameScreen> {
                           ),
                           TextField(controller: controller.oauthCode, decoration: const InputDecoration(labelText: 'OAuth code')),
                           const SizedBox(height: 8),
+                          OutlinedButton(
+                            onPressed: controller.loadAvailableDiceForCurrentPlayer,
+                            child: const Text('Load Available Dice'),
+                          ),
+                          const SizedBox(height: 6),
+                          DropdownButtonFormField<String>(
+                            value: controller.selectedColorDie,
+                            items: controller.availableColorDice
+                                .map((d) => DropdownMenuItem(value: d, child: Text(d)))
+                                .toList(),
+                            onChanged: controller.setSelectedColorDie,
+                            decoration: const InputDecoration(labelText: 'Selected Color Die'),
+                          ),
+                          const SizedBox(height: 6),
+                          DropdownButtonFormField<String>(
+                            value: controller.selectedNumberDie,
+                            items: controller.availableNumberDice
+                                .map((d) => DropdownMenuItem(value: d, child: Text(d)))
+                                .toList(),
+                            onChanged: controller.setSelectedNumberDie,
+                            decoration: const InputDecoration(labelText: 'Selected Number Die'),
+                          ),
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              OutlinedButton(onPressed: controller.submitActiveSelection, child: const Text('Submit Active Selection')),
+                              OutlinedButton(onPressed: controller.submitPlayerMove, child: const Text('Submit Move (Selected Cells)')),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
                           Text(controller.status),
                           if (controller.sessionId != null) Text('Session: ${controller.sessionId}'),
                           if (controller.scores.isNotEmpty) Text('Scores loaded: ${controller.scores.length}'),
@@ -114,7 +146,12 @@ class _GameScreenState extends State<GameScreen> {
                 child: CommonCard(
                   child: board.isEmpty
                       ? const Center(child: Text('Start a game to render board'))
-                      : BoardSheet(board: board, colorFor: _cellColor),
+                      : BoardSheet(
+                          board: board,
+                          colorFor: _cellColor,
+                          selectedCellIds: controller.selectedCellIds,
+                          onCellTap: controller.toggleCellSelection,
+                        ),
                 ),
               ),
             ],

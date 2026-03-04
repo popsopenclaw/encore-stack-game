@@ -68,6 +68,11 @@ class ApiClient {
     return _decodeMap(r);
   }
 
+  Future<Map<String, dynamic>> getAvailableDice(String sessionId, {required int playerIndex}) async {
+    final r = await http.get(_u('/api/gameplay/$sessionId/available-dice/$playerIndex'), headers: _jsonHeaders);
+    return _decodeMap(r);
+  }
+
   Future<Map<String, dynamic>> playerAction(
     String sessionId, {
     required int playerIndex,

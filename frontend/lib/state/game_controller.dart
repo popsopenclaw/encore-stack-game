@@ -16,6 +16,12 @@ class GameController extends ChangeNotifier {
   List<dynamic> scores = const [];
   List<dynamic> events = const [];
 
+  List<String> availableColorDice = const [];
+  List<String> availableNumberDice = const [];
+  String? selectedColorDie;
+  String? selectedNumberDie;
+  final Set<String> selectedCellIds = <String>{};
+
   String get apiBase => backendUrl.text.trim();
   ApiClient get client => ApiClient(baseUrl: apiBase, jwt: jwt);
 
@@ -69,6 +75,7 @@ class GameController extends ChangeNotifier {
         final game = await client.startGame(names);
         state = game;
         sessionId = game['sessionId'] as String;
+        selectedCellIds.clear();
       });
 
   Future<void> reloadState() async {
@@ -83,6 +90,8 @@ class GameController extends ChangeNotifier {
     await _run('Roll', () async {
       await client.roll(sessionId!);
       state = await client.getGame(sessionId!);
+      await loadAvailableDiceForCurrentPlayer();
+      selectedCellIds.clear();
     });
   }
 
@@ -111,6 +120,71 @@ class GameController extends ChangeNotifier {
     await _run('Load score/events', () async {
       scores = await client.getScore(sessionId!);
       events = await client.getEvents(sessionId!);
+    });
+  }
+
+  Future<void> loadAvailableDiceForCurrentPlayer() async {
+    if (sessionId == null) return;
+    await _run('Load available dice', () async {
+      final playerIndex = (state?['activePlayerIndex'] as int?) ?? 0;
+      final dice = await client.getAvailableDice(sessionId!, playerIndex: playerIndex);
+      availableColorDice = ((dice['colorDice'] as List<dynamic>?) ?? const []).map((e) => '$e').toList();
+      availableNumberDice = ((dice['numberDice'] as List<dynamic>?) ?? const []).map((e) => '$e').toList();
+      selectedColorDie = availableColorDice.isNotEmpty ? availableColorDice.first : null;
+      selectedNumberDie = availableNumberDice.isNotEmpty ? availableNumberDice.first : null;
+    });
+  }
+
+  void setSelectedColorDie(String? value) {
+    selectedColorDie = value;
+    notifyListeners();
+  }
+
+  void setSelectedNumberDie(String? value) {
+    selectedNumberDie = value;
+    notifyListeners();
+  }
+
+  void toggleCellSelection(String cellId) {
+    if (selectedCellIds.contains(cellId)) {
+      selectedCellIds.remove(cellId);
+    } else {
+      selectedCellIds.add(cellId);
+    }
+    notifyListeners();
+  }
+
+  Future<void> submitActiveSelection() async {
+    if (sessionId == null) return;
+    await _run('Active selection', () async {
+      final idx = (state?['activePlayerIndex'] as int?) ?? 0;
+      await client.activeSelect(
+        sessionId!,
+        playerIndex: idx,
+        colorDie: selectedColorDie,
+        numberDie: selectedNumberDie,
+        pass: false,
+      );
+      state = await client.getGame(sessionId!);
+      await loadAvailableDiceForCurrentPlayer();
+    });
+  }
+
+  Future<void> submitPlayerMove() async {
+    if (sessionId == null) return;
+    await _run('Submit move', () async {
+      final idx = (state?['activePlayerIndex'] as int?) ?? 0;
+      await client.playerAction(
+        sessionId!,
+        playerIndex: idx,
+        colorDie: selectedColorDie,
+        numberDie: selectedNumberDie,
+        cellIds: selectedCellIds.toList(),
+        pass: false,
+      );
+      selectedCellIds.clear();
+      state = await client.getGame(sessionId!);
+      await loadAvailableDiceForCurrentPlayer();
     });
   }
 

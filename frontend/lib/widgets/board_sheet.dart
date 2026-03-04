@@ -4,10 +4,18 @@ import '../theme/app_palette.dart';
 import '../theme/app_text_styles.dart';
 
 class BoardSheet extends StatelessWidget {
-  const BoardSheet({super.key, required this.board, required this.colorFor});
+  const BoardSheet({
+    super.key,
+    required this.board,
+    required this.colorFor,
+    required this.selectedCellIds,
+    required this.onCellTap,
+  });
 
   final List<Map<String, dynamic>> board;
   final Color Function(String) colorFor;
+  final Set<String> selectedCellIds;
+  final void Function(String cellId) onCellTap;
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +36,14 @@ class BoardSheet extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(child: BoardGrid(board: board, colorFor: colorFor)),
+                    Expanded(
+                      child: BoardGrid(
+                        board: board,
+                        colorFor: colorFor,
+                        selectedCellIds: selectedCellIds,
+                        onCellTap: onCellTap,
+                      ),
+                    ),
                     const SizedBox(width: 12),
                     const SideScoreLegend(),
                   ],
@@ -196,10 +211,18 @@ class BottomRulesStrip extends StatelessWidget {
 }
 
 class BoardGrid extends StatelessWidget {
-  const BoardGrid({super.key, required this.board, required this.colorFor});
+  const BoardGrid({
+    super.key,
+    required this.board,
+    required this.colorFor,
+    required this.selectedCellIds,
+    required this.onCellTap,
+  });
 
   final List<Map<String, dynamic>> board;
   final Color Function(String) colorFor;
+  final Set<String> selectedCellIds;
+  final void Function(String cellId) onCellTap;
 
   @override
   Widget build(BuildContext context) {
@@ -237,16 +260,21 @@ class BoardGrid extends StatelessWidget {
               children: List.generate(maxX + 1, (x) {
                 final c = grid['${x}_$y'];
                 if (c == null) return const SizedBox(width: 30, height: 30);
-                return Container(
-                  width: 30,
-                  height: 30,
-                  margin: const EdgeInsets.all(1.5),
-                  decoration: BoxDecoration(
-                    color: colorFor((c['color'] as String)),
-                    borderRadius: BorderRadius.circular(7),
-                    border: Border.all(color: AppPalette.borderDark),
+                final cellId = c['id'] as String;
+                final isSelected = selectedCellIds.contains(cellId);
+                return GestureDetector(
+                  onTap: () => onCellTap(cellId),
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    margin: const EdgeInsets.all(1.5),
+                    decoration: BoxDecoration(
+                      color: colorFor((c['color'] as String)),
+                      borderRadius: BorderRadius.circular(7),
+                      border: Border.all(color: isSelected ? AppPalette.white : AppPalette.borderDark, width: isSelected ? 2 : 1),
+                    ),
+                    child: (c['starred'] as bool) ? const Icon(Icons.star, size: 16, color: AppPalette.white) : null,
                   ),
-                  child: (c['starred'] as bool) ? const Icon(Icons.star, size: 16, color: AppPalette.white) : null,
                 );
               }),
             );
