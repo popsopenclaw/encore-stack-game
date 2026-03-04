@@ -10,6 +10,7 @@ import '../widgets/backend_url_section.dart';
 import '../widgets/board_sheet.dart';
 import '../widgets/common_card.dart';
 import '../widgets/primary_actions_section.dart';
+import '../widgets/game_audit_panel.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -136,6 +137,8 @@ class _GameScreenState extends State<GameScreen> {
                           if (controller.events.isNotEmpty) Text('Events loaded: ${controller.events.length}'),
                         if (lobbyController.lobbyCode != null)
                           Text('Lobby: ${lobbyController.lobbyCode} • ${lobbyController.lobbyName.isEmpty ? 'Untitled' : lobbyController.lobbyName}'),
+                        const SizedBox(height: 8),
+                        GameAuditPanel(scores: controller.scores, events: controller.events),
                         ],
                       ),
                     ),
