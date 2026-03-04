@@ -25,7 +25,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
-    ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("Valkey")!));
+{
+    var connectionString = builder.Configuration.GetConnectionString("Valkey")
+        ?? throw new InvalidOperationException("Missing ConnectionStrings:Valkey");
+    var options = ConfigurationOptions.Parse(connectionString);
+    options.AbortOnConnectFail = false;
+    return ConnectionMultiplexer.Connect(options);
+});
 
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<JwtTokenService>();

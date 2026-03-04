@@ -37,12 +37,20 @@ public class LobbyRealtimeNotifier(IHubContext<LobbyHub> hub, IServiceProvider s
         var ttlSeconds = configuration.GetValue<int?>("Lobby:NotifyDedupeTtlSeconds") ?? 300;
         if (ttlSeconds < 30) ttlSeconds = 30;
 
-        var previous = await db.StringGetAsync(key);
-        if (previous.HasValue && previous.ToString() == hash)
-            return;
+        try
+        {
+            var previous = await db.StringGetAsync(key);
+            if (previous.HasValue && previous.ToString() == hash)
+                return;
 
-        await hub.Clients.Group(LobbyHub.GroupName(lobby.Code)).SendAsync("lobbyUpdated", lobby);
-        await db.StringSetAsync(key, hash, TimeSpan.FromSeconds(ttlSeconds));
+            await hub.Clients.Group(LobbyHub.GroupName(lobby.Code)).SendAsync("lobbyUpdated", lobby);
+            await db.StringSetAsync(key, hash, TimeSpan.FromSeconds(ttlSeconds));
+        }
+        catch (Exception ex)
+        {
+            logger.LogDebug(ex, "Realtime dedupe cache operation failed; proceeding without dedupe for lobby {Code}", code);
+            await hub.Clients.Group(LobbyHub.GroupName(lobby.Code)).SendAsync("lobbyUpdated", lobby);
+        }
     }
 
     private static string Sha256(string input)
