@@ -46,6 +46,12 @@ Not allowed:
 - SignalR hub endpoint: `/hubs/lobby`
 - Event used by frontend: `lobbyUpdated`
 
+## Observability
+
+- API includes request logging middleware with correlation id propagation.
+- Response header: `X-Correlation-Id` (generated if caller does not provide one).
+- Logs include method/path/status/duration and correlation id.
+
 ## Testing
 
 - Unit tests: `backend/Encore.Api.Tests`

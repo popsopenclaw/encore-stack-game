@@ -17,6 +17,7 @@
 - [ ] Create lobby / join lobby works
 - [ ] Realtime lobby updates observed between two clients
 - [ ] Start game + roll + move + score/events work
+- [ ] Request logs include method/path/status/duration + correlation id (`X-Correlation-Id`)
 
 ## Backup / rollback safety
 - [ ] Run backup script before major release (`scripts/backup-vm.sh`)

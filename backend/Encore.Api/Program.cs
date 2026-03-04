@@ -7,6 +7,7 @@ using Encore.Application.Gameplay;
 using Encore.Application.Lobby;
 using Encore.Infrastructure.Adapters;
 using Encore.Api.Hubs;
+using Encore.Api.Middleware;
 using Encore.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -76,6 +77,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseMiddleware<RequestLoggingMiddleware>();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
