@@ -27,4 +27,7 @@ public class LobbyRepositoryAdapter(AppDbContext db) : ILobbyRepository
 
     public void RemoveMember(LobbyMember member)
         => db.LobbyMembers.Remove(member);
+
+    public void RemoveLobby(Lobby lobby)
+        => db.Lobbies.Remove(lobby);
 }

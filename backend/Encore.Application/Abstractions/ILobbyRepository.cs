@@ -11,4 +11,5 @@ public interface ILobbyRepository
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
     Task<List<LobbyEntity>> ListOpenAsync(int limit = 20, CancellationToken cancellationToken = default);
     void RemoveMember(LobbyMember member);
+    void RemoveLobby(LobbyEntity lobby);
 }

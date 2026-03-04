@@ -75,7 +75,21 @@ public class LobbyUseCase(ILobbyRepository repository) : ILobbyUseCase
         var member = lobby.Members.FirstOrDefault(m => m.AccountId == accountId);
         if (member is null) return;
 
+        var wasHost = lobby.HostAccountId == accountId;
+
         repository.RemoveMember(member);
+
+        var remainingMembers = lobby.Members.Where(m => m.AccountId != accountId).OrderBy(m => m.JoinedAt).ToList();
+
+        if (remainingMembers.Count == 0)
+        {
+            repository.RemoveLobby(lobby);
+        }
+        else if (wasHost)
+        {
+            lobby.HostAccountId = remainingMembers[0].AccountId;
+        }
+
         await repository.SaveChangesAsync(cancellationToken);
     }
 
