@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using StackExchange.Redis;
 
 namespace Encore.Api.IntegrationTests;
 
@@ -15,6 +17,8 @@ public class ApiWebFactory : WebApplicationFactory<Program>
     {
         builder.ConfigureServices(services =>
         {
+            services.RemoveAll<IConnectionMultiplexer>();
+
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = "Test";
