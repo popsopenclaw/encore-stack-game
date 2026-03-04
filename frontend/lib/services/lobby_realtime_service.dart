@@ -4,6 +4,13 @@ import 'package:signalr_netcore/json_hub_protocol.dart';
 import 'package:signalr_netcore/http_connection_options.dart';
 import 'package:signalr_netcore/hub_connection_builder.dart';
 
+enum RealtimeStatus {
+  disconnected,
+  connecting,
+  connected,
+  reconnecting,
+}
+
 class LobbyRealtimeService {
   HubConnection? _conn;
 
@@ -11,11 +18,15 @@ class LobbyRealtimeService {
     required String backendUrl,
     required String? jwt,
     required void Function(Map<String, dynamic> lobby) onLobbyUpdated,
+    void Function(RealtimeStatus status)? onStatusChanged,
+    Future<void> Function()? onReconnected,
   }) async {
     await disconnect();
 
     final hubUrl = '$backendUrl/hubs/lobby';
     final protocol = JsonHubProtocol();
+
+    onStatusChanged?.call(RealtimeStatus.connecting);
 
     _conn = HubConnectionBuilder()
         .withUrl(
@@ -25,7 +36,21 @@ class LobbyRealtimeService {
           ),
         )
         .withHubProtocol(protocol as IHubProtocol)
+        .withAutomaticReconnect(retryDelays: [0, 1000, 2000, 4000, 8000, 16000])
         .build();
+
+    _conn!.onclose(({error}) {
+      onStatusChanged?.call(RealtimeStatus.disconnected);
+    });
+
+    _conn!.onreconnecting(({error}) {
+      onStatusChanged?.call(RealtimeStatus.reconnecting);
+    });
+
+    _conn!.onreconnected(({connectionId}) async {
+      onStatusChanged?.call(RealtimeStatus.connected);
+      if (onReconnected != null) await onReconnected();
+    });
 
     _conn!.on('lobbyUpdated', (args) {
       if (args == null || args.isEmpty) return;
@@ -38,6 +63,7 @@ class LobbyRealtimeService {
     });
 
     await _conn!.start();
+    onStatusChanged?.call(RealtimeStatus.connected);
   }
 
   Future<void> joinLobbyGroup(String code) async {

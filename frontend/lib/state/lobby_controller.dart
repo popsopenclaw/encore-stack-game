@@ -16,6 +16,7 @@ class LobbyController extends ChangeNotifier {
   int maxPlayers = 6;
   String displayName = 'Player';
   String status = 'Ready';
+  RealtimeStatus realtimeStatus = RealtimeStatus.disconnected;
   List<Map<String, dynamic>> lobbies = const [];
 
   String _backendUrl = kBackendUrlFromBuild;
@@ -41,6 +42,15 @@ class LobbyController extends ChangeNotifier {
             lobbies = [lobby, ...lobbies];
           }
           notifyListeners();
+        },
+        onStatusChanged: (s) {
+          realtimeStatus = s;
+          notifyListeners();
+        },
+        onReconnected: () async {
+          if (lobbyCode != null) {
+            await _realtime.joinLobbyGroup(lobbyCode!);
+          }
         },
       );
     }
@@ -112,6 +122,7 @@ class LobbyController extends ChangeNotifier {
     } on UnauthorizedApiException {
       await authSessionController.logout();
       await _realtime.disconnect();
+      realtimeStatus = RealtimeStatus.disconnected;
       status = 'Session expired. Please login again.';
     } catch (e) {
       status = '$label failed: $e';
@@ -121,6 +132,7 @@ class LobbyController extends ChangeNotifier {
 
   Future<void> resetForLogout() async {
     await _realtime.disconnect();
+    realtimeStatus = RealtimeStatus.disconnected;
     lobbyCode = null;
     lobbyName = '';
     lobbies = const [];

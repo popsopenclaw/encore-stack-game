@@ -40,6 +40,14 @@ class _HomeScreenState extends State<HomeScreen> {
         animation: Listenable.merge([lobbyController, authSessionController]),
         builder: (context, _) => Column(
           children: [
+            Card(
+              child: ListTile(
+                dense: true,
+                leading: const Icon(Icons.wifi_tethering),
+                title: const Text('Realtime status'),
+                subtitle: Text(lobbyController.realtimeStatus.name),
+              ),
+            ),
             if (lobbyController.lobbyCode != null)
               Card(
                 child: Padding(

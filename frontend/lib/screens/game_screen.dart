@@ -156,6 +156,7 @@ class _GameScreenState extends State<GameScreen> {
                           if (controller.events.isNotEmpty) Text('Events loaded: ${controller.events.length}'),
                         if (lobbyController.lobbyCode != null)
                           Text('Lobby: ${lobbyController.lobbyCode} • ${lobbyController.lobbyName.isEmpty ? 'Untitled' : lobbyController.lobbyName}'),
+                        Text('Realtime: ${lobbyController.realtimeStatus.name}'),
                         const SizedBox(height: 8),
                         GameAuditPanel(scores: controller.scores, events: controller.events),
                         ],
