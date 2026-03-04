@@ -4,7 +4,10 @@ using Encore.Infrastructure.Services;
 using Encore.Application.Abstractions;
 using Encore.Application.Auth;
 using Encore.Application.Gameplay;
+using Encore.Application.Lobby;
 using Encore.Infrastructure.Adapters;
+using Encore.Api.Hubs;
+using Encore.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -13,6 +16,7 @@ using StackExchange.Redis;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -34,11 +38,14 @@ builder.Services.AddScoped<EncoreRulesEngine>();
 builder.Services.AddScoped<IAuthGateway, AuthGatewayAdapter>();
 builder.Services.AddScoped<ITokenIssuer, TokenIssuerAdapter>();
 builder.Services.AddScoped<IGameplayRepository, GameplayRepositoryAdapter>();
+builder.Services.AddScoped<ILobbyRepository, LobbyRepositoryAdapter>();
 builder.Services.AddScoped<IGameRules, GameRulesAdapter>();
 
 // Use-cases
 builder.Services.AddScoped<IAuthUseCase, AuthUseCase>();
 builder.Services.AddScoped<IGameplayUseCase, GameplayUseCase>();
+builder.Services.AddScoped<ILobbyUseCase, LobbyUseCase>();
+builder.Services.AddScoped<LobbyRealtimeNotifier>();
 
 var jwtKey = builder.Configuration["Jwt:SigningKey"] ?? throw new InvalidOperationException("Missing Jwt:SigningKey");
 var issuer = builder.Configuration["Jwt:Issuer"] ?? "encore-api";
@@ -72,6 +79,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<LobbyHub>("/hubs/lobby");
 app.MapGet("/health", () => Results.Ok(new { ok = true }));
 
 app.Run();

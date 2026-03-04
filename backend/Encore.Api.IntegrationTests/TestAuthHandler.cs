@@ -1,3 +1,4 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
@@ -14,7 +15,11 @@ public class TestAuthHandler(
 {
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        var claims = new[] { new Claim(ClaimTypes.NameIdentifier, "integration-user") };
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, "integration-user"),
+            new Claim(JwtRegisteredClaimNames.Sub, "11111111-1111-1111-1111-111111111111")
+        };
         var identity = new ClaimsIdentity(claims, Scheme.Name);
         var principal = new ClaimsPrincipal(identity);
         var ticket = new AuthenticationTicket(principal, Scheme.Name);
