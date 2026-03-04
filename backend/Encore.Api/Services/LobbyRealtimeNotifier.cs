@@ -8,7 +8,7 @@ using StackExchange.Redis;
 
 namespace Encore.Api.Services;
 
-public class LobbyRealtimeNotifier(IHubContext<LobbyHub> hub, IServiceProvider services, IConfiguration configuration, ILogger<LobbyRealtimeNotifier> logger)
+public class LobbyRealtimeNotifier(IHubContext<LobbyHub> hub, IServiceProvider services, IConfiguration configuration)
 {
     public async Task LobbyUpdatedAsync(LobbyDto lobby)
     {
@@ -16,41 +16,18 @@ public class LobbyRealtimeNotifier(IHubContext<LobbyHub> hub, IServiceProvider s
         var payload = JsonSerializer.Serialize(lobby);
         var hash = Sha256(payload);
 
-        IDatabase? db = null;
-        try
-        {
-            db = services.GetService<IConnectionMultiplexer>()?.GetDatabase();
-        }
-        catch (Exception ex)
-        {
-            logger.LogDebug(ex, "Realtime dedupe cache unavailable; proceeding without dedupe for lobby {Code}", code);
-        }
-
-        // If redis is unavailable (e.g., CI/integration hosts), skip dedupe but still notify.
-        if (db is null)
-        {
-            await hub.Clients.Group(LobbyHub.GroupName(lobby.Code)).SendAsync("lobbyUpdated", lobby);
-            return;
-        }
+        var db = services.GetRequiredService<IConnectionMultiplexer>().GetDatabase();
 
         var key = $"lobby:notify:last:{code}";
         var ttlSeconds = configuration.GetValue<int?>("Lobby:NotifyDedupeTtlSeconds") ?? 300;
         if (ttlSeconds < 30) ttlSeconds = 30;
 
-        try
-        {
-            var previous = await db.StringGetAsync(key);
-            if (previous.HasValue && previous.ToString() == hash)
-                return;
+        var previous = await db.StringGetAsync(key);
+        if (previous.HasValue && previous.ToString() == hash)
+            return;
 
-            await hub.Clients.Group(LobbyHub.GroupName(lobby.Code)).SendAsync("lobbyUpdated", lobby);
-            await db.StringSetAsync(key, hash, TimeSpan.FromSeconds(ttlSeconds));
-        }
-        catch (Exception ex)
-        {
-            logger.LogDebug(ex, "Realtime dedupe cache operation failed; proceeding without dedupe for lobby {Code}", code);
-            await hub.Clients.Group(LobbyHub.GroupName(lobby.Code)).SendAsync("lobbyUpdated", lobby);
-        }
+        await hub.Clients.Group(LobbyHub.GroupName(lobby.Code)).SendAsync("lobbyUpdated", lobby);
+        await db.StringSetAsync(key, hash, TimeSpan.FromSeconds(ttlSeconds));
     }
 
     private static string Sha256(string input)
