@@ -5,7 +5,7 @@ namespace Encore.Api.IntegrationTests.Fakes;
 
 public class FakeLobbyUseCase : ILobbyUseCase
 {
-    private static readonly Dictionary<string, LobbyDto> _store = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, LobbyDto> _store = new(StringComparer.OrdinalIgnoreCase);
 
     public Task<LobbyDto> CreateAsync(Guid accountId, CreateLobbyRequest request, CancellationToken cancellationToken = default)
     {

@@ -21,9 +21,13 @@ public class ApiWebFactory : WebApplicationFactory<Program>
                 options.DefaultChallengeScheme = "Test";
             }).AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("Test", _ => { });
 
-            services.AddScoped<IAuthUseCase, FakeAuthUseCase>();
-            services.AddScoped<IGameplayUseCase, FakeGameplayUseCase>();
-            services.AddScoped<ILobbyUseCase, FakeLobbyUseCase>();
+            services.AddSingleton<FakeAuthUseCase>();
+            services.AddSingleton<FakeGameplayUseCase>();
+            services.AddSingleton<FakeLobbyUseCase>();
+
+            services.AddSingleton<IAuthUseCase>(sp => sp.GetRequiredService<FakeAuthUseCase>());
+            services.AddSingleton<IGameplayUseCase>(sp => sp.GetRequiredService<FakeGameplayUseCase>());
+            services.AddSingleton<ILobbyUseCase>(sp => sp.GetRequiredService<FakeLobbyUseCase>());
         });
     }
 }
