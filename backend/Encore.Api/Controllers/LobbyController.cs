@@ -80,6 +80,28 @@ public class LobbyController(ILobbyUseCase lobbyUseCase, LobbyRealtimeNotifier n
         }
     }
 
+    [HttpPost("{code}/start")]
+    public async Task<IActionResult> StartMatch(string code, [FromBody] StartLobbyMatchRequest request)
+    {
+        try
+        {
+            var sessionId = await lobbyUseCase.StartMatchAsync(GetAccountId(), code, request);
+            return Ok(new { sessionId });
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     [HttpPost("{code}/leave")]
     public async Task<IActionResult> Leave(string code)
     {

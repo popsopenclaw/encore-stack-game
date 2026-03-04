@@ -6,7 +6,7 @@ using LobbyEntity = Encore.Domain.Models.Lobby;
 
 namespace Encore.Application.Lobby;
 
-public class LobbyUseCase(ILobbyRepository repository, IConfiguration configuration) : ILobbyUseCase
+public class LobbyUseCase(ILobbyRepository repository, IConfiguration configuration, IGameplayRepository gameplayRepository, IGameRules rules) : ILobbyUseCase
 {
     public async Task<LobbyDto> CreateAsync(Guid accountId, CreateLobbyRequest request, CancellationToken cancellationToken = default)
     {
@@ -97,6 +97,20 @@ public class LobbyUseCase(ILobbyRepository repository, IConfiguration configurat
 
         await repository.SaveChangesAsync(cancellationToken);
         return ToDto(lobby);
+    }
+
+    public async Task<string> StartMatchAsync(Guid accountId, string code, StartLobbyMatchRequest request, CancellationToken cancellationToken = default)
+    {
+        var lobby = await repository.GetByCodeAsync(code.Trim().ToUpperInvariant(), cancellationToken)
+                    ?? throw new KeyNotFoundException("Lobby not found");
+
+        if (lobby.HostAccountId != accountId)
+            throw new UnauthorizedAccessException("Only host can start a match");
+
+        var names = lobby.Members.Select(m => string.IsNullOrWhiteSpace(m.DisplayName) ? "Player" : m.DisplayName).ToList();
+        var state = rules.NewGame(names);
+        await gameplayRepository.SaveAsync(state.SessionId, state);
+        return state.SessionId;
     }
 
     public async Task LeaveAsync(Guid accountId, string code, CancellationToken cancellationToken = default)

@@ -1,6 +1,7 @@
 using Encore.Application.Abstractions;
 using Encore.Application.Contracts.Lobby;
 using Encore.Application.Lobby;
+using Encore.Domain;
 using Encore.Domain.Models;
 using Microsoft.Extensions.Configuration;
 using LobbyEntity = Encore.Domain.Models.Lobby;
@@ -13,7 +14,7 @@ public class LobbyUseCaseTests
     public async Task HostLeaves_TransfersHostToOldestRemainingMember()
     {
         var repo = new FakeLobbyRepository();
-        var useCase = new LobbyUseCase(repo, BuildConfig(staleHours: 24));
+        var useCase = CreateUseCase(repo, staleHours: 24);
 
         var hostId = Guid.NewGuid();
         var otherId = Guid.NewGuid();
@@ -32,7 +33,7 @@ public class LobbyUseCaseTests
     public async Task LastMemberLeaves_RemovesLobby()
     {
         var repo = new FakeLobbyRepository();
-        var useCase = new LobbyUseCase(repo, BuildConfig(staleHours: 24));
+        var useCase = CreateUseCase(repo, staleHours: 24);
 
         var hostId = Guid.NewGuid();
         var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4, "Host"));
@@ -47,7 +48,7 @@ public class LobbyUseCaseTests
     public async Task NonHostCannotUpdateLobby()
     {
         var repo = new FakeLobbyRepository();
-        var useCase = new LobbyUseCase(repo, BuildConfig(staleHours: 24));
+        var useCase = CreateUseCase(repo, staleHours: 24);
 
         var hostId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -63,7 +64,7 @@ public class LobbyUseCaseTests
     public async Task HostCanUpdateLobbySettings()
     {
         var repo = new FakeLobbyRepository();
-        var useCase = new LobbyUseCase(repo, BuildConfig(staleHours: 24));
+        var useCase = CreateUseCase(repo, staleHours: 24);
 
         var hostId = Guid.NewGuid();
         var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4, "Host"));
@@ -79,7 +80,7 @@ public class LobbyUseCaseTests
     public async Task StaleLobbiesAreNotListed_AndRemainForAsyncCleanup()
     {
         var repo = new FakeLobbyRepository();
-        var useCase = new LobbyUseCase(repo, BuildConfig(staleHours: 1));
+        var useCase = CreateUseCase(repo, staleHours: 1);
 
         var hostId = Guid.NewGuid();
         var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4, "Host"));
@@ -100,6 +101,60 @@ public class LobbyUseCaseTests
         {
             ["Lobby:StaleHours"] = staleHours.ToString()
         }).Build();
+
+
+    [Fact]
+    public async Task NonHostCannotStartMatch()
+    {
+        var repo = new FakeLobbyRepository();
+        var useCase = CreateUseCase(repo, staleHours: 24);
+
+        var hostId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4, "Host"));
+        await useCase.JoinAsync(userId, new JoinLobbyRequest(created.Code, "User"));
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            useCase.StartMatchAsync(userId, created.Code, new StartLobbyMatchRequest("Game")));
+    }
+
+    [Fact]
+    public async Task HostCanStartMatch()
+    {
+        var repo = new FakeLobbyRepository();
+        var useCase = CreateUseCase(repo, staleHours: 24);
+
+        var hostId = Guid.NewGuid();
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4, "Host"));
+
+        var sessionId = await useCase.StartMatchAsync(hostId, created.Code, new StartLobbyMatchRequest("Game"));
+        Assert.False(string.IsNullOrWhiteSpace(sessionId));
+    }
+
+    private static LobbyUseCase CreateUseCase(FakeLobbyRepository repo, int staleHours)
+        => new(repo, BuildConfig(staleHours), new FakeGameplayRepository(), new FakeGameRules());
+
+    private class FakeGameplayRepository : IGameplayRepository
+    {
+        public Task SaveAsync(string sessionId, GameState state) => Task.CompletedTask;
+        public Task<GameState?> GetAsync(string sessionId) => Task.FromResult<GameState?>(null);
+    }
+
+    private class FakeGameRules : IGameRules
+    {
+        public GameState NewGame(List<string> playerNames)
+            => new GameState { SessionId = Guid.NewGuid().ToString("N"), Players = playerNames.Select(n => new PlayerState { Name = n }).ToList(), Board = [] };
+
+        public void RollForTurn(GameState state) { }
+        public void ActivePlayerSelect(GameState state, ActiveSelectionRequest request) { }
+        public DiceRoll GetAvailableDiceForPlayer(GameState state, int playerIndex)
+            => new([ColorDieFace.Blue], [NumberDieFace.One]);
+        public void ResolvePlayerAction(GameState state, PlayerActionRequest request) { }
+        public void EnableEncore(GameState state) { }
+        public List<object> CalculateScores(GameState state) => [];
+        public void ApplyMoveDirect(GameState state, MoveRequest move) { }
+    }
 
     private class FakeLobbyRepository : ILobbyRepository
     {

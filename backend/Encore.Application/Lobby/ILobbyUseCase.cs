@@ -9,5 +9,6 @@ public interface ILobbyUseCase
     Task<LobbyDto?> GetAsync(string code, CancellationToken cancellationToken = default);
     Task<List<LobbyDto>> ListAsync(int limit = 20, CancellationToken cancellationToken = default);
     Task<LobbyDto> UpdateAsync(Guid accountId, string code, UpdateLobbyRequest request, CancellationToken cancellationToken = default);
+    Task<string> StartMatchAsync(Guid accountId, string code, StartLobbyMatchRequest request, CancellationToken cancellationToken = default);
     Task LeaveAsync(Guid accountId, string code, CancellationToken cancellationToken = default);
 }

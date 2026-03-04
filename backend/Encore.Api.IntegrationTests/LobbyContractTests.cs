@@ -46,6 +46,17 @@ public class LobbyContractTests : IClassFixture<ApiWebFactory>
         var patch = await _client.PatchAsJsonAsync($"/api/lobby/{created.Code}", new UpdateLobbyRequest("Renamed", 4));
         patch.EnsureSuccessStatusCode();
 
+        var startHost = await _client.PostAsJsonAsync($"/api/lobby/{created.Code}/start", new StartLobbyMatchRequest("Game"));
+        startHost.EnsureSuccessStatusCode();
+
+        using var nonHostReq = new HttpRequestMessage(HttpMethod.Post, $"/api/lobby/{created.Code}/start")
+        {
+            Content = JsonContent.Create(new StartLobbyMatchRequest("Game"))
+        };
+        nonHostReq.Headers.Add("X-Test-Sub", "22222222-2222-2222-2222-222222222222");
+        var startNonHost = await _client.SendAsync(nonHostReq);
+        Assert.Equal(HttpStatusCode.Forbidden, startNonHost.StatusCode);
+
         var leave = await _client.PostAsync($"/api/lobby/{created.Code}/leave", null);
         Assert.Equal(HttpStatusCode.NoContent, leave.StatusCode);
     }

@@ -9,7 +9,7 @@ public class FakeLobbyUseCase : ILobbyUseCase
 
     public Task<LobbyDto> CreateAsync(Guid accountId, CreateLobbyRequest request, CancellationToken cancellationToken = default)
     {
-        var code = "ABC123";
+        var code = Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
         var dto = new LobbyDto(Guid.NewGuid(), code, request.Name, request.MaxPlayers, request.HostDisplayName,
             [new LobbyMemberDto(accountId, request.HostDisplayName, DateTimeOffset.UtcNow)]);
         _store[code] = dto;
@@ -49,6 +49,17 @@ public class FakeLobbyUseCase : ILobbyUseCase
         };
         _store[code] = updated;
         return Task.FromResult(updated);
+    }
+
+    public Task<string> StartMatchAsync(Guid accountId, string code, StartLobbyMatchRequest request, CancellationToken cancellationToken = default)
+    {
+        if (!_store.TryGetValue(code, out var lobby))
+            throw new KeyNotFoundException();
+
+        if (lobby.Members.FirstOrDefault()?.AccountId != accountId)
+            throw new UnauthorizedAccessException("Only host can start a match");
+
+        return Task.FromResult("test-session");
     }
 
     public Task LeaveAsync(Guid accountId, string code, CancellationToken cancellationToken = default)
