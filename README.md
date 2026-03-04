@@ -141,6 +141,7 @@ Lobby + realtime (Bearer JWT):
 - `GET /api/lobby?limit=20` -> list lobbies
 - `POST /api/lobby/{code}/leave` -> leave lobby
 - `WS /hubs/lobby` (SignalR) -> realtime `lobbyUpdated` events
+- stale lobby policy: controlled by `Lobby:StaleHours` (default 24h)
 
 Legacy session endpoints (still available):
 - `POST /api/gamesessions`

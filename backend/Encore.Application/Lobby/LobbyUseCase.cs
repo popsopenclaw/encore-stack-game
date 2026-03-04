@@ -1,11 +1,12 @@
 using Encore.Application.Abstractions;
 using Encore.Application.Contracts.Lobby;
 using Encore.Domain.Models;
+using Microsoft.Extensions.Configuration;
 using LobbyEntity = Encore.Domain.Models.Lobby;
 
 namespace Encore.Application.Lobby;
 
-public class LobbyUseCase(ILobbyRepository repository) : ILobbyUseCase
+public class LobbyUseCase(ILobbyRepository repository, IConfiguration configuration) : ILobbyUseCase
 {
     public async Task<LobbyDto> CreateAsync(Guid accountId, CreateLobbyRequest request, CancellationToken cancellationToken = default)
     {
@@ -57,14 +58,26 @@ public class LobbyUseCase(ILobbyRepository repository) : ILobbyUseCase
 
     public async Task<LobbyDto?> GetAsync(string code, CancellationToken cancellationToken = default)
     {
+        await CleanupStaleLobbies(cancellationToken);
+
         var lobby = await repository.GetByCodeAsync(code.Trim().ToUpperInvariant(), cancellationToken);
-        return lobby is null ? null : ToDto(lobby);
+        if (lobby is null) return null;
+
+        if (lobby.CreatedAt < StaleThreshold())
+        {
+            repository.RemoveLobby(lobby);
+            await repository.SaveChangesAsync(cancellationToken);
+            return null;
+        }
+
+        return ToDto(lobby);
     }
 
     public async Task<List<LobbyDto>> ListAsync(int limit = 20, CancellationToken cancellationToken = default)
     {
+        await CleanupStaleLobbies(cancellationToken);
         var list = await repository.ListOpenAsync(limit, cancellationToken);
-        return list.Select(ToDto).ToList();
+        return list.Where(l => l.CreatedAt >= StaleThreshold()).Select(ToDto).ToList();
     }
 
     public async Task<LobbyDto> UpdateAsync(Guid accountId, string code, UpdateLobbyRequest request, CancellationToken cancellationToken = default)
@@ -128,6 +141,24 @@ public class LobbyUseCase(ILobbyRepository repository) : ILobbyUseCase
             lobby.Members.FirstOrDefault(m => m.AccountId == lobby.HostAccountId)?.DisplayName ?? "Host",
             lobby.Members.Select(m => new LobbyMemberDto(m.AccountId, m.DisplayName, m.JoinedAt)).ToList()
         );
+
+    private DateTimeOffset StaleThreshold()
+    {
+        var hours = configuration.GetValue<int?>("Lobby:StaleHours") ?? 24;
+        if (hours < 1) hours = 1;
+        return DateTimeOffset.UtcNow.AddHours(-hours);
+    }
+
+    private async Task CleanupStaleLobbies(CancellationToken cancellationToken)
+    {
+        var stale = await repository.ListStaleAsync(StaleThreshold(), cancellationToken);
+        if (stale.Count == 0) return;
+
+        foreach (var lobby in stale)
+            repository.RemoveLobby(lobby);
+
+        await repository.SaveChangesAsync(cancellationToken);
+    }
 
     private static string GenerateCode()
         => Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();

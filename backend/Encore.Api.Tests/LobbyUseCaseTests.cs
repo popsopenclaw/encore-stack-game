@@ -2,6 +2,7 @@ using Encore.Application.Abstractions;
 using Encore.Application.Contracts.Lobby;
 using Encore.Application.Lobby;
 using Encore.Domain.Models;
+using Microsoft.Extensions.Configuration;
 using LobbyEntity = Encore.Domain.Models.Lobby;
 
 namespace Encore.Api.Tests;
@@ -12,7 +13,7 @@ public class LobbyUseCaseTests
     public async Task HostLeaves_TransfersHostToOldestRemainingMember()
     {
         var repo = new FakeLobbyRepository();
-        var useCase = new LobbyUseCase(repo);
+        var useCase = new LobbyUseCase(repo, BuildConfig(staleHours: 24));
 
         var hostId = Guid.NewGuid();
         var otherId = Guid.NewGuid();
@@ -31,7 +32,7 @@ public class LobbyUseCaseTests
     public async Task LastMemberLeaves_RemovesLobby()
     {
         var repo = new FakeLobbyRepository();
-        var useCase = new LobbyUseCase(repo);
+        var useCase = new LobbyUseCase(repo, BuildConfig(staleHours: 24));
 
         var hostId = Guid.NewGuid();
         var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4, "Host"));
@@ -46,7 +47,7 @@ public class LobbyUseCaseTests
     public async Task NonHostCannotUpdateLobby()
     {
         var repo = new FakeLobbyRepository();
-        var useCase = new LobbyUseCase(repo);
+        var useCase = new LobbyUseCase(repo, BuildConfig(staleHours: 24));
 
         var hostId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -62,7 +63,7 @@ public class LobbyUseCaseTests
     public async Task HostCanUpdateLobbySettings()
     {
         var repo = new FakeLobbyRepository();
-        var useCase = new LobbyUseCase(repo);
+        var useCase = new LobbyUseCase(repo, BuildConfig(staleHours: 24));
 
         var hostId = Guid.NewGuid();
         var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4, "Host"));
@@ -72,6 +73,33 @@ public class LobbyUseCaseTests
         Assert.Equal("Renamed", updated.Name);
         Assert.Equal(5, updated.MaxPlayers);
     }
+
+
+    [Fact]
+    public async Task StaleLobbiesAreNotListed_AndAreCleanedUp()
+    {
+        var repo = new FakeLobbyRepository();
+        var useCase = new LobbyUseCase(repo, BuildConfig(staleHours: 1));
+
+        var hostId = Guid.NewGuid();
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4, "Host"));
+
+        // force stale
+        var lobby = await repo.GetByCodeAsync(created.Code);
+        lobby!.CreatedAt = DateTimeOffset.UtcNow.AddHours(-2);
+
+        var list = await useCase.ListAsync();
+        Assert.DoesNotContain(list, l => l.Code == created.Code);
+
+        var stillThere = await repo.GetByCodeAsync(created.Code);
+        Assert.Null(stillThere);
+    }
+
+    private static IConfiguration BuildConfig(int staleHours)
+        => new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Lobby:StaleHours"] = staleHours.ToString()
+        }).Build();
 
     private class FakeLobbyRepository : ILobbyRepository
     {
@@ -94,6 +122,9 @@ public class LobbyUseCaseTests
 
         public Task<List<LobbyEntity>> ListOpenAsync(int limit = 20, CancellationToken cancellationToken = default)
             => Task.FromResult(_lobbies.Take(limit).ToList());
+
+        public Task<List<LobbyEntity>> ListStaleAsync(DateTimeOffset threshold, CancellationToken cancellationToken = default)
+            => Task.FromResult(_lobbies.Where(l => l.CreatedAt < threshold).ToList());
 
         public void RemoveMember(LobbyMember member)
         {

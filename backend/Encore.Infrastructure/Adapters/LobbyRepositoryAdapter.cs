@@ -22,6 +22,9 @@ public class LobbyRepositoryAdapter(AppDbContext db) : ILobbyRepository
     public Task<List<Lobby>> ListOpenAsync(int limit = 20, CancellationToken cancellationToken = default)
         => db.Lobbies.Include(l => l.Members).OrderByDescending(l => l.CreatedAt).Take(limit).ToListAsync(cancellationToken);
 
+    public Task<List<Lobby>> ListStaleAsync(DateTimeOffset threshold, CancellationToken cancellationToken = default)
+        => db.Lobbies.Include(l => l.Members).Where(l => l.CreatedAt < threshold).ToListAsync(cancellationToken);
+
     public Task SaveChangesAsync(CancellationToken cancellationToken = default)
         => db.SaveChangesAsync(cancellationToken);
 
