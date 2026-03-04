@@ -89,7 +89,7 @@ class GameController extends ChangeNotifier {
   }
 
   Future<void> roll() async {
-    if (sessionId == null) return;
+    if (!canRoll) return;
     await _run('Roll', () async {
       await client.roll(sessionId!);
       state = await client.getGame(sessionId!);
@@ -99,7 +99,7 @@ class GameController extends ChangeNotifier {
   }
 
   Future<void> activePass() async {
-    if (sessionId == null) return;
+    if (!canActivePass) return;
     await _run('Active pass', () async {
       final idx = (state?['activePlayerIndex'] as int?) ?? 0;
       await client.activeSelect(sessionId!, playerIndex: idx, pass: true);
@@ -127,7 +127,7 @@ class GameController extends ChangeNotifier {
   }
 
   Future<void> loadAvailableDiceForCurrentPlayer() async {
-    if (sessionId == null) return;
+    if (!canLoadAvailableDice) return;
     await _run('Load available dice', () async {
       final playerIndex = (state?['activePlayerIndex'] as int?) ?? 0;
       final dice = await client.getAvailableDice(sessionId!, playerIndex: playerIndex);
@@ -158,7 +158,7 @@ class GameController extends ChangeNotifier {
   }
 
   Future<void> submitActiveSelection() async {
-    if (sessionId == null) return;
+    if (!canSubmitActiveSelection) return;
     await _run('Active selection', () async {
       final idx = (state?['activePlayerIndex'] as int?) ?? 0;
       await client.activeSelect(
@@ -174,7 +174,7 @@ class GameController extends ChangeNotifier {
   }
 
   Future<void> submitPlayerMove() async {
-    if (sessionId == null) return;
+    if (!canSubmitMove) return;
     await _run('Submit move', () async {
       final idx = (state?['activePlayerIndex'] as int?) ?? 0;
       await client.playerAction(
@@ -190,6 +190,25 @@ class GameController extends ChangeNotifier {
       await loadAvailableDiceForCurrentPlayer();
     });
   }
+
+  String get phase => (state?['phase']?.toString() ?? 'NeedRoll');
+
+  bool get canRoll => sessionId != null && phase == 'NeedRoll';
+  bool get canActivePass => sessionId != null && phase == 'NeedActiveSelection';
+  bool get canSubmitActiveSelection =>
+      sessionId != null &&
+      phase == 'NeedActiveSelection' &&
+      selectedColorDie != null &&
+      selectedNumberDie != null;
+
+  bool get canSubmitMove =>
+      sessionId != null &&
+      phase == 'PlayersResolving' &&
+      selectedColorDie != null &&
+      selectedNumberDie != null &&
+      selectedCellIds.isNotEmpty;
+
+  bool get canLoadAvailableDice => sessionId != null && phase == 'PlayersResolving';
 
   Future<void> _run(String action, Future<void> Function() fn) async {
     _setStatus('$action...');

@@ -17,8 +17,8 @@ class PrimaryActionsSection extends StatelessWidget {
   final VoidCallback onExchange;
   final VoidCallback onStartGame;
   final VoidCallback onReload;
-  final VoidCallback onRoll;
-  final VoidCallback onActivePass;
+  final VoidCallback? onRoll;
+  final VoidCallback? onActivePass;
   final VoidCallback onAllPass;
   final VoidCallback onScoreEvents;
 
