@@ -114,6 +114,15 @@ class LobbyController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> resetForLogout() async {
+    await _realtime.disconnect();
+    lobbyCode = null;
+    lobbyName = '';
+    lobbies = const [];
+    status = 'Logged out';
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _realtime.disconnect();

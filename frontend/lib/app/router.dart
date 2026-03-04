@@ -7,9 +7,11 @@ import '../screens/join_lobby_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/settings_screen.dart';
+import '../screens/session_gate_screen.dart';
 
 class AppRoutes {
-  static const login = '/';
+  static const gate = '/';
+  static const login = '/login';
   static const home = '/home';
   static const createLobby = '/lobby/create';
   static const joinLobby = '/lobby/join';
@@ -20,6 +22,7 @@ class AppRoutes {
 
 class AppRouter {
   static Map<String, WidgetBuilder> get routes => {
+        AppRoutes.gate: (_) => const SessionGateScreen(),
         AppRoutes.login: (_) => const LoginScreen(),
         AppRoutes.home: (_) => const HomeScreen(),
         AppRoutes.createLobby: (_) => const CreateLobbyScreen(),

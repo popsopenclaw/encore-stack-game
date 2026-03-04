@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/backend_config.dart';
 import '../services/api_client.dart';
+import 'auth_session_controller.dart';
 
 class GameController extends ChangeNotifier {
   final backendUrl = TextEditingController(text: kBackendUrlFromBuild);
@@ -68,6 +69,7 @@ class GameController extends ChangeNotifier {
         jwt = body['accessToken'] as String;
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(kJwtPrefKey, jwt!);
+        await authSessionController.markLoggedIn(jwt!);
       });
 
   Future<void> startGame() async => _run('Start game', () async {

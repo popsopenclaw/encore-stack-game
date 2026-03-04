@@ -15,7 +15,7 @@ class EncoreApp extends StatelessWidget {
       title: 'Encore',
       theme: AppTheme.light,
       routes: AppRouter.routes,
-      initialRoute: AppRoutes.login,
+      initialRoute: AppRoutes.gate,
     );
   }
 }
