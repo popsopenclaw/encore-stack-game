@@ -142,6 +142,7 @@ Lobby + realtime (Bearer JWT):
 - `POST /api/lobby/{code}/leave` -> leave lobby
 - `WS /hubs/lobby` (SignalR) -> realtime `lobbyUpdated` events
 - stale lobby policy: async background cleanup controlled by `Lobby:StaleHours` (default 24h) and `Lobby:CleanupIntervalMinutes` (default 15)
+- realtime dedupe: Valkey-backed hash cache controlled by `Lobby:NotifyDedupeTtlSeconds` (default 300)
 
 Legacy session endpoints (still available):
 - `POST /api/gamesessions`
