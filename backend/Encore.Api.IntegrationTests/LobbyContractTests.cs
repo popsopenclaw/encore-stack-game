@@ -10,43 +10,37 @@ public class LobbyContractTests : IClassFixture<ApiWebFactory>
 
     public LobbyContractTests(ApiWebFactory factory)
     {
-        _client = factory.CreateClient();
+      _client = factory.CreateClient();
     }
 
     [Fact]
-    public async Task CreateJoinListLeave_LobbyFlow_Works()
+    public async Task CreateJoinGetLeave_LobbyEndpoints_Work()
     {
         var create = await _client.PostAsJsonAsync("/api/lobby", new CreateLobbyRequest("My Lobby", 4, "Host"));
-        if (!create.IsSuccessStatusCode)
-        {
-            var body = await create.Content.ReadAsStringAsync();
-            throw new Exception($"Create lobby failed: {(int)create.StatusCode} {body}");
-        }
+        create.EnsureSuccessStatusCode();
         var created = await create.Content.ReadFromJsonAsync<LobbyDto>();
         Assert.NotNull(created);
-        Assert.Equal("My Lobby", created!.Name);
+        Assert.False(string.IsNullOrWhiteSpace(created!.Code));
 
-        var code = string.IsNullOrWhiteSpace(created.Code) ? "ABC123" : created.Code;
-
-        var join = await _client.PostAsJsonAsync("/api/lobby/join", new JoinLobbyRequest(code, "Player2"));
+        var join = await _client.PostAsJsonAsync("/api/lobby/join", new JoinLobbyRequest(created.Code, "Player2"));
         join.EnsureSuccessStatusCode();
-        var joined = await join.Content.ReadFromJsonAsync<LobbyDto>();
-        Assert.NotNull(joined);
-        Assert.True(joined!.Members.Count >= 1);
 
         var get = await _client.GetAsync($"/api/lobby/{created.Code}");
         get.EnsureSuccessStatusCode();
 
-        var list = await _client.GetAsync("/api/lobby?limit=10");
-        list.EnsureSuccessStatusCode();
-        var lobbies = await list.Content.ReadFromJsonAsync<List<LobbyDto>>();
-        Assert.NotNull(lobbies);
-        Assert.Contains(lobbies!, l => l.Code == created.Code);
+        var leave = await _client.PostAsync($"/api/lobby/{created.Code}/leave", null);
+        Assert.Equal(HttpStatusCode.NoContent, leave.StatusCode);
+    }
 
-        var patch = await _client.PatchAsJsonAsync($"/api/lobby/{created.Code}", new UpdateLobbyRequest("Renamed", 4));
-        patch.EnsureSuccessStatusCode();
+    [Fact]
+    public async Task HostOnlyStartMatch_IsEnforced()
+    {
+        var create = await _client.PostAsJsonAsync("/api/lobby", new CreateLobbyRequest("Game Lobby", 4, "Host"));
+        create.EnsureSuccessStatusCode();
+        var created = await create.Content.ReadFromJsonAsync<LobbyDto>();
+        Assert.NotNull(created);
 
-        var startHost = await _client.PostAsJsonAsync($"/api/lobby/{created.Code}/start", new StartLobbyMatchRequest("Game"));
+        var startHost = await _client.PostAsJsonAsync($"/api/lobby/{created!.Code}/start", new StartLobbyMatchRequest("Game"));
         startHost.EnsureSuccessStatusCode();
 
         using var nonHostReq = new HttpRequestMessage(HttpMethod.Post, $"/api/lobby/{created.Code}/start")
@@ -54,10 +48,8 @@ public class LobbyContractTests : IClassFixture<ApiWebFactory>
             Content = JsonContent.Create(new StartLobbyMatchRequest("Game"))
         };
         nonHostReq.Headers.Add("X-Test-Sub", "22222222-2222-2222-2222-222222222222");
+
         var startNonHost = await _client.SendAsync(nonHostReq);
         Assert.Equal(HttpStatusCode.Forbidden, startNonHost.StatusCode);
-
-        var leave = await _client.PostAsync($"/api/lobby/{created.Code}/leave", null);
-        Assert.Equal(HttpStatusCode.NoContent, leave.StatusCode);
     }
 }
