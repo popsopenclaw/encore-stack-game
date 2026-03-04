@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app/router.dart';
-import '../state/lobby_state.dart';
+import '../state/lobby_controller.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/common_card.dart';
@@ -36,9 +36,14 @@ class _CreateLobbyScreenState extends State<CreateLobbyScreen> {
             TextField(controller: _max, decoration: const InputDecoration(labelText: 'Max players (1-6)')),
             const Spacer(),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 final parsed = int.tryParse(_max.text.trim()) ?? 6;
-                lobbyState.createLobby(name: _name.text.trim(), max: parsed);
+                await lobbyController.createLobby(
+                  name: _name.text.trim(),
+                  max: parsed,
+                  hostDisplayName: 'Host',
+                );
+                if (!context.mounted) return;
                 Navigator.pushReplacementNamed(context, AppRoutes.game);
               },
               child: const Text('Create & Start'),

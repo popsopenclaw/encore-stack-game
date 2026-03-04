@@ -23,6 +23,8 @@ class GameController extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getString(kBackendPrefKey);
     if (saved != null && saved.isNotEmpty) backendUrl.text = saved;
+    final savedJwt = prefs.getString(kJwtPrefKey);
+    if (savedJwt != null && savedJwt.isNotEmpty) jwt = savedJwt;
     notifyListeners();
   }
 
@@ -58,6 +60,8 @@ class GameController extends ChangeNotifier {
   Future<void> exchange() async => _run('OAuth exchange', () async {
         final body = await client.exchangeGitHubCode(oauthCode.text.trim());
         jwt = body['accessToken'] as String;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(kJwtPrefKey, jwt!);
       });
 
   Future<void> startGame() async => _run('Start game', () async {

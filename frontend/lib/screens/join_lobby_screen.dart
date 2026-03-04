@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app/router.dart';
-import '../state/lobby_state.dart';
+import '../state/lobby_controller.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/common_card.dart';
@@ -36,8 +36,9 @@ class _JoinLobbyScreenState extends State<JoinLobbyScreen> {
             TextField(controller: _name, decoration: const InputDecoration(labelText: 'Display name')),
             const Spacer(),
             ElevatedButton(
-              onPressed: () {
-                lobbyState.joinLobby(code: _code.text.trim(), name: _name.text.trim());
+              onPressed: () async {
+                await lobbyController.joinLobby(code: _code.text.trim(), name: _name.text.trim());
+                if (!context.mounted) return;
                 Navigator.pushReplacementNamed(context, AppRoutes.game);
               },
               child: const Text('Join Game'),

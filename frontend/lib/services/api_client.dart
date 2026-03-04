@@ -100,6 +100,55 @@ class ApiClient {
     return _decodeList(r);
   }
 
+  Future<Map<String, dynamic>> createLobby({
+    required String name,
+    required int maxPlayers,
+    required String hostDisplayName,
+  }) async {
+    final r = await http.post(
+      _u('/api/lobby'),
+      headers: _jsonHeaders,
+      body: jsonEncode({
+        'name': name,
+        'maxPlayers': maxPlayers,
+        'hostDisplayName': hostDisplayName,
+      }),
+    );
+    return _decodeMap(r);
+  }
+
+  Future<Map<String, dynamic>> joinLobby({
+    required String code,
+    required String displayName,
+  }) async {
+    final r = await http.post(
+      _u('/api/lobby/join'),
+      headers: _jsonHeaders,
+      body: jsonEncode({
+        'code': code,
+        'displayName': displayName,
+      }),
+    );
+    return _decodeMap(r);
+  }
+
+  Future<Map<String, dynamic>> getLobby(String code) async {
+    final r = await http.get(_u('/api/lobby/$code'), headers: _jsonHeaders);
+    return _decodeMap(r);
+  }
+
+  Future<List<dynamic>> listLobbies({int limit = 20}) async {
+    final r = await http.get(_u('/api/lobby?limit=$limit'), headers: _jsonHeaders);
+    return _decodeList(r);
+  }
+
+  Future<void> leaveLobby(String code) async {
+    final r = await http.post(_u('/api/lobby/$code/leave'), headers: _jsonHeaders);
+    if (r.statusCode >= 400) {
+      throw Exception('HTTP ${r.statusCode}: ${r.body}');
+    }
+  }
+
   Map<String, dynamic> _decodeMap(http.Response r) {
     if (r.statusCode >= 400) {
       throw Exception('HTTP ${r.statusCode}: ${r.body}');

@@ -1,13 +1,24 @@
 import 'package:flutter/material.dart';
 
 import '../app/router.dart';
-import '../state/lobby_state.dart';
+import '../state/lobby_controller.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/menu_tile_button.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    lobbyController.init();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,10 +29,10 @@ class HomeScreen extends StatelessWidget {
         IconButton(onPressed: () => Navigator.pushNamed(context, AppRoutes.settings), icon: const Icon(Icons.settings)),
       ],
       child: AnimatedBuilder(
-        animation: lobbyState,
+        animation: lobbyController,
         builder: (context, _) => Column(
           children: [
-            if (lobbyState.lobbyCode != null)
+            if (lobbyController.lobbyCode != null)
               Card(
                 child: Padding(
                   padding: AppSpacing.cardPadding,
@@ -30,7 +41,7 @@ class HomeScreen extends StatelessWidget {
                       const Icon(Icons.groups),
                       const SizedBox(width: AppSpacing.sm),
                       Expanded(
-                        child: Text('Current lobby: ${lobbyState.lobbyName.isEmpty ? lobbyState.lobbyCode : lobbyState.lobbyName} (${lobbyState.lobbyCode})'),
+                        child: Text('Current lobby: ${lobbyController.lobbyName.isEmpty ? lobbyController.lobbyCode : lobbyController.lobbyName} (${lobbyController.lobbyCode})'),
                       ),
                       TextButton(
                         onPressed: () => Navigator.pushNamed(context, AppRoutes.game),

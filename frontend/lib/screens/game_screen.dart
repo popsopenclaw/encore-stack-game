@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../state/game_controller.dart';
-import '../state/lobby_state.dart';
+import '../state/lobby_controller.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
@@ -25,6 +25,7 @@ class _GameScreenState extends State<GameScreen> {
   void initState() {
     super.initState();
     controller = GameController()..init();
+    lobbyController.init();
   }
 
   @override
@@ -54,7 +55,7 @@ class _GameScreenState extends State<GameScreen> {
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: controller,
+      animation: Listenable.merge([controller, lobbyController]),
       builder: (context, _) {
         final board = (controller.state?['board'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
 
@@ -101,8 +102,8 @@ class _GameScreenState extends State<GameScreen> {
                           if (controller.sessionId != null) Text('Session: ${controller.sessionId}'),
                           if (controller.scores.isNotEmpty) Text('Scores loaded: ${controller.scores.length}'),
                           if (controller.events.isNotEmpty) Text('Events loaded: ${controller.events.length}'),
-                        if (lobbyState.lobbyCode != null)
-                          Text('Lobby: ${lobbyState.lobbyCode} • ${lobbyState.lobbyName.isEmpty ? 'Untitled' : lobbyState.lobbyName}'),
+                        if (lobbyController.lobbyCode != null)
+                          Text('Lobby: ${lobbyController.lobbyCode} • ${lobbyController.lobbyName.isEmpty ? 'Untitled' : lobbyController.lobbyName}'),
                         ],
                       ),
                     ),
