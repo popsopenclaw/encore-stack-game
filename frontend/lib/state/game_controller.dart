@@ -81,6 +81,16 @@ class GameController extends ChangeNotifier {
         selectedCellIds.clear();
       });
 
+  Future<void> startMatchFromLobby(String lobbyCode) async => _run('Start match', () async {
+        final res = await client.startLobbyMatch(lobbyCode, name: 'Lobby Match');
+        final id = (res['sessionId'] ?? '').toString();
+        if (id.isEmpty) throw Exception('Lobby start did not return sessionId');
+        sessionId = id;
+        state = await client.getGame(sessionId!);
+        await loadAvailableDiceForCurrentPlayer();
+        selectedCellIds.clear();
+      });
+
   Future<void> reloadState() async {
     if (sessionId == null) return;
     await _run('Reload state', () async {

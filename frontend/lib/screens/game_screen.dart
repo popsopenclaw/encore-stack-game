@@ -160,10 +160,17 @@ class _GameScreenState extends State<GameScreen> {
                             children: [
                               const Text('No active match yet.'),
                               const SizedBox(height: 12),
-                              ElevatedButton(
-                                onPressed: () => Navigator.pushNamed(context, AppRoutes.createLobby),
-                                child: const Text('Create Lobby'),
-                              ),
+                              if (lobbyController.lobbyCode != null)
+                                ElevatedButton.icon(
+                                  onPressed: () => controller.startMatchFromLobby(lobbyController.lobbyCode!),
+                                  icon: const Icon(Icons.play_arrow),
+                                  label: const Text('Start Match'),
+                                )
+                              else
+                                ElevatedButton(
+                                  onPressed: () => Navigator.pushNamed(context, AppRoutes.createLobby),
+                                  child: const Text('Create Lobby'),
+                                ),
                             ],
                           ),
                         )

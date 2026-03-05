@@ -182,6 +182,15 @@ class ApiClient {
     return _decodeList(r);
   }
 
+  Future<Map<String, dynamic>> startLobbyMatch(String code, {String name = 'Game'}) async {
+    final r = await _http.post(
+      _u('/api/lobby/$code/start'),
+      headers: _jsonHeaders,
+      body: jsonEncode({'name': name}),
+    );
+    return _decodeMap(r);
+  }
+
   Future<void> leaveLobby(String code) async {
     final r = await _http.post(_u('/api/lobby/$code/leave'), headers: _jsonHeaders);
     _throwIfError(r);
