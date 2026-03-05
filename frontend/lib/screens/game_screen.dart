@@ -107,67 +107,97 @@ class _GameScreenState extends State<GameScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Text('Match Controls', style: AppTextStyles.subtitle.copyWith(color: AppPalette.textOnDark)),
-                          const SizedBox(height: AppSpacing.xs),
-                          if (lobbyController.lobbyCode != null)
-                            Text(
-                              'Lobby: ${lobbyController.lobbyCode} • ${lobbyController.lobbyName.isEmpty ? 'Untitled' : lobbyController.lobbyName}',
-                              style: const TextStyle(color: AppPalette.textOnDark),
+                          Text('MATCH HUD', style: AppTextStyles.subtitle.copyWith(color: AppPalette.textOnDark, letterSpacing: 0.8)),
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: AppPalette.stripBg,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppPalette.borderDark),
                             ),
-                          Text('Realtime: ${lobbyController.realtimeStatus.name}', style: const TextStyle(color: AppPalette.textOnDark)),
-                          const SizedBox(height: AppSpacing.sm),
-                          Text('Phase: ${controller.phase}', style: const TextStyle(color: AppPalette.textOnDark)),
-                          if (controller.sessionId != null)
-                            Text('Session: ${controller.sessionId}', style: const TextStyle(color: AppPalette.textOnDark)),
-
-                          const SizedBox(height: AppSpacing.md),
-                          if (colorDice.isNotEmpty || numberDice.isNotEmpty) ...[
-                            Text('Current Roll', style: AppTextStyles.subtitle.copyWith(color: AppPalette.textOnDark)),
-                            const SizedBox(height: 8),
-                            Wrap(
+                            child: Wrap(
                               spacing: 8,
-                              runSpacing: 8,
+                              runSpacing: 6,
                               children: [
-                                ...colorDice.map((d) => _dieChip(d, _dieColor(d), AppPalette.textPrimary)),
-                                ...numberDice.map((d) => _dieChip(_prettyEnum(d), AppPalette.white, AppPalette.textPrimary)),
+                                if (lobbyController.lobbyCode != null)
+                                  _metaPill('Lobby ${lobbyController.lobbyCode}'),
+                                _metaPill('Realtime ${lobbyController.realtimeStatus.name}'),
+                                _metaPill('Phase ${controller.phase}'),
+                                if (controller.sessionId != null) _metaPill('Session ${controller.sessionId!.substring(0, 8)}'),
                               ],
                             ),
-                            const SizedBox(height: AppSpacing.md),
-                          ],
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppPalette.stripBg,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppPalette.borderDark),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('CURRENT ROLL', style: AppTextStyles.boardLabel.copyWith(color: AppPalette.textOnDark)),
+                                const SizedBox(height: 8),
+                                if (colorDice.isEmpty && numberDice.isEmpty)
+                                  const Text('Roll to reveal dice', style: TextStyle(color: AppPalette.textOnDark))
+                                else
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: [
+                                      ...colorDice.map((d) => _dieChip(d, _dieColor(d), AppPalette.textPrimary)),
+                                      ...numberDice.map((d) => _dieChip(_prettyEnum(d), AppPalette.white, AppPalette.textPrimary)),
+                                    ],
+                                  ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
 
                           Wrap(
                             spacing: 8,
                             runSpacing: 8,
                             children: [
-                              FilledButton(onPressed: controller.canRoll ? controller.roll : null, child: const Text('Roll Dice')),
-                              OutlinedButton(onPressed: controller.canActivePass ? controller.activePass : null, child: const Text('Active Pass')),
-                              OutlinedButton(onPressed: controller.reloadState, child: const Text('Refresh State')),
-                              OutlinedButton(onPressed: controller.loadScoreAndEvents, child: const Text('Refresh Score & Timeline')),
+                              FilledButton(onPressed: controller.canRoll ? controller.roll : null, child: const Text('Roll')),
+                              FilledButton.tonal(onPressed: controller.canActivePass ? controller.activePass : null, child: const Text('Pass')),
+                              OutlinedButton(onPressed: controller.reloadState, child: const Text('Refresh')),
+                              OutlinedButton(onPressed: controller.loadScoreAndEvents, child: const Text('Score/Timeline')),
                             ],
                           ),
-                          const SizedBox(height: AppSpacing.md),
-                          InputDecorator(
-                            decoration: const InputDecoration(labelText: 'Color die', filled: true, fillColor: AppPalette.white),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                isExpanded: true,
-                                value: controller.selectedColorDie,
-                                items: controller.availableColorDice.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
-                                onChanged: controller.setSelectedColorDie,
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: InputDecorator(
+                                  decoration: const InputDecoration(labelText: 'Color', filled: true, fillColor: AppPalette.white),
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<String>(
+                                      isExpanded: true,
+                                      value: controller.selectedColorDie,
+                                      items: controller.availableColorDice.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+                                      onChanged: controller.setSelectedColorDie,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          InputDecorator(
-                            decoration: const InputDecoration(labelText: 'Number die', filled: true, fillColor: AppPalette.white),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                isExpanded: true,
-                                value: controller.selectedNumberDie,
-                                items: controller.availableNumberDice.map((d) => DropdownMenuItem(value: d, child: Text(_prettyEnum(d)))).toList(),
-                                onChanged: controller.setSelectedNumberDie,
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: InputDecorator(
+                                  decoration: const InputDecoration(labelText: 'Number', filled: true, fillColor: AppPalette.white),
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<String>(
+                                      isExpanded: true,
+                                      value: controller.selectedNumberDie,
+                                      items: controller.availableNumberDice.map((d) => DropdownMenuItem(value: d, child: Text(_prettyEnum(d)))).toList(),
+                                      onChanged: controller.setSelectedNumberDie,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
+                            ],
                           ),
                           const SizedBox(height: AppSpacing.sm),
                           Text('Selected cells: ${controller.selectedCellIds.length}', style: const TextStyle(color: AppPalette.textOnDark)),
@@ -243,6 +273,21 @@ class _GameScreenState extends State<GameScreen> {
         border: Border.all(color: AppPalette.borderDark),
       ),
       child: Text(text, style: TextStyle(color: fg, fontWeight: FontWeight.w700)),
+    );
+  }
+
+  Widget _metaPill(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppPalette.boardFrame,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppPalette.borderDark),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(color: AppPalette.textOnDark, fontSize: 12, fontWeight: FontWeight.w600),
+      ),
     );
   }
 
