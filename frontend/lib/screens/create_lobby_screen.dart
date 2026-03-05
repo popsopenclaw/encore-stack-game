@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app/router.dart';
 import '../state/lobby_controller.dart';
+import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/common_card.dart';
@@ -108,7 +109,7 @@ class _CreateLobbyScreenState extends State<CreateLobbyScreen> {
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: AppSpacing.sm),
-                  Text(_error!, style: const TextStyle(color: Colors.red)),
+                  Text(_error!, style: const TextStyle(color: AppPalette.danger)),
                 ],
                 const SizedBox(height: AppSpacing.lg),
                 Row(
