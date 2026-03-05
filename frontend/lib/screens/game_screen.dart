@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../app/router.dart';
 import '../state/auth_session_controller.dart';
 import '../state/game_controller.dart';
-import '../state/lobby_controller.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
@@ -20,12 +19,23 @@ class GameScreen extends StatefulWidget {
 
 class _GameScreenState extends State<GameScreen> {
   late final GameController controller;
+  bool _sessionHydrated = false;
 
   @override
   void initState() {
     super.initState();
     controller = GameController()..init();
-    lobbyController.init();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_sessionHydrated) return;
+    _sessionHydrated = true;
+    final sid = ModalRoute.of(context)?.settings.arguments as String?;
+    if (sid != null && sid.isNotEmpty) {
+      controller.loadSession(sid);
+    }
   }
 
   @override
@@ -79,7 +89,7 @@ class _GameScreenState extends State<GameScreen> {
     }
 
     return AnimatedBuilder(
-      animation: Listenable.merge([controller, lobbyController, authSessionController]),
+      animation: Listenable.merge([controller, authSessionController]),
       builder: (context, _) {
         final board = (controller.state?['board'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
         final currentRoll = controller.state?['currentRoll'] as Map<String, dynamic>?;
@@ -120,9 +130,6 @@ class _GameScreenState extends State<GameScreen> {
                               spacing: 8,
                               runSpacing: 6,
                               children: [
-                                if (lobbyController.lobbyCode != null)
-                                  _metaPill('Lobby ${lobbyController.lobbyCode}'),
-                                _metaPill('Realtime ${lobbyController.realtimeStatus.name}'),
                                 _metaPill('Phase ${controller.phase}'),
                                 if (controller.sessionId != null) _metaPill('Session ${controller.sessionId!.substring(0, 8)}'),
                               ],
@@ -156,7 +163,6 @@ class _GameScreenState extends State<GameScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
-
                           Wrap(
                             spacing: 8,
                             runSpacing: 8,
@@ -233,19 +239,12 @@ class _GameScreenState extends State<GameScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Text('No active match yet.'),
+                              const Text('No active game loaded.'),
                               const SizedBox(height: 12),
-                              if (lobbyController.lobbyCode != null)
-                                ElevatedButton.icon(
-                                  onPressed: () => controller.startMatchFromLobby(lobbyController.lobbyCode!),
-                                  icon: const Icon(Icons.play_arrow),
-                                  label: const Text('Start Match'),
-                                )
-                              else
-                                ElevatedButton(
-                                  onPressed: () => Navigator.pushNamed(context, AppRoutes.createLobby),
-                                  child: const Text('Create Lobby'),
-                                ),
+                              OutlinedButton(
+                                onPressed: () => Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (_) => false),
+                                child: const Text('Back to Home'),
+                              ),
                             ],
                           ),
                         )

@@ -59,7 +59,7 @@ class _CreateLobbyScreenState extends State<CreateLobbyScreen> {
       return;
     }
 
-    Navigator.pushReplacementNamed(context, AppRoutes.game);
+    Navigator.pushReplacementNamed(context, AppRoutes.lobbyRoom);
   }
 
   @override

@@ -39,7 +39,7 @@ class _JoinLobbyScreenState extends State<JoinLobbyScreen> {
               onPressed: () async {
                 await lobbyController.joinLobby(code: _code.text.trim(), name: _name.text.trim());
                 if (!context.mounted) return;
-                Navigator.pushReplacementNamed(context, AppRoutes.game);
+                Navigator.pushReplacementNamed(context, AppRoutes.lobbyRoom);
               },
               child: const Text('Join Game'),
             ),

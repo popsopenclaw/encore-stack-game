@@ -91,6 +91,14 @@ class GameController extends ChangeNotifier {
         selectedCellIds.clear();
       });
 
+  Future<void> loadSession(String id) async {
+    sessionId = id;
+    await _run('Load game', () async {
+      state = await client.getGame(sessionId!);
+      await loadAvailableDiceForCurrentPlayer();
+    });
+  }
+
   Future<void> reloadState() async {
     if (sessionId == null) return;
     await _run('Reload state', () async {

@@ -18,6 +18,7 @@ class LobbyController extends ChangeNotifier {
   String status = 'Ready';
   RealtimeStatus realtimeStatus = RealtimeStatus.disconnected;
   List<Map<String, dynamic>> lobbies = const [];
+  List<Map<String, dynamic>> members = const [];
 
   String _backendUrl = kBackendUrlFromBuild;
   String? _jwt;
@@ -64,6 +65,9 @@ class LobbyController extends ChangeNotifier {
     _jwt = prefs.getString(kJwtPrefKey);
   }
 
+  String get backendUrl => _backendUrl;
+  String? get jwt => _jwt;
+
   ApiClient get _api => ApiClient(baseUrl: _backendUrl, jwt: _jwt);
 
   Future<void> createLobby({required String name, required int max, required String hostDisplayName}) async {
@@ -95,6 +99,7 @@ class LobbyController extends ChangeNotifier {
       await _realtime.leaveLobbyGroup(current);
       lobbyCode = null;
       lobbyName = '';
+      members = const [];
       await refreshLobbies();
     });
   }
@@ -107,10 +112,28 @@ class LobbyController extends ChangeNotifier {
     });
   }
 
+  Future<void> refreshCurrentLobby() async {
+    if (lobbyCode == null) return;
+    await _withStatus('Refreshing lobby', () async {
+      await refreshSessionConfig();
+      final lobby = await _api.getLobby(lobbyCode!);
+      _bindLobby(lobby);
+    });
+  }
+
   void _bindLobby(Map<String, dynamic> lobby) {
     lobbyCode = (lobby['code'] as String?)?.toUpperCase();
     lobbyName = (lobby['name'] as String?) ?? '';
     maxPlayers = (lobby['maxPlayers'] as int?) ?? 6;
+
+    final rawMembers = (lobby['members'] as List<dynamic>?) ?? const [];
+    members = rawMembers
+        .map((e) => (e as Map).map((k, v) => MapEntry('$k', v)))
+        .map((m) => {
+              ...m,
+              'isHost': (m['displayName']?.toString() ?? '') == (lobby['hostDisplayName']?.toString() ?? ''),
+            })
+        .toList();
   }
 
   Future<void> _withStatus(String label, Future<void> Function() op) async {
@@ -137,6 +160,7 @@ class LobbyController extends ChangeNotifier {
     realtimeStatus = RealtimeStatus.disconnected;
     lobbyCode = null;
     lobbyName = '';
+    members = const [];
     lobbies = const [];
     status = 'Logged out';
     notifyListeners();

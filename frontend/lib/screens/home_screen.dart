@@ -60,8 +60,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Text('Current lobby: ${lobbyController.lobbyName.isEmpty ? lobbyController.lobbyCode : lobbyController.lobbyName} (${lobbyController.lobbyCode})'),
                       ),
                       TextButton(
-                        onPressed: () => Navigator.pushNamed(context, AppRoutes.game),
-                        child: const Text('Open'),
+                        onPressed: () => Navigator.pushNamed(context, AppRoutes.lobbyRoom),
+                        child: const Text('Open Lobby'),
                       )
                     ],
                   ),
@@ -79,12 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icons.meeting_room,
               onTap: () => Navigator.pushNamed(context, AppRoutes.joinLobby),
             ),
-            MenuTileButton(
-              title: 'Open Game',
-              subtitle: 'Direct game screen for development',
-              icon: Icons.videogame_asset,
-              onTap: () => Navigator.pushNamed(context, AppRoutes.game),
-            ),
+
           ],
         ),
       ),
