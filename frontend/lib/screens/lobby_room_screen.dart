@@ -5,6 +5,7 @@ import '../app/router.dart';
 import '../services/api_client.dart';
 import '../state/lobby_controller.dart';
 import '../theme/app_palette.dart';
+import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/common_card.dart';
@@ -84,10 +85,10 @@ class _LobbyRoomScreenState extends State<LobbyRoomScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(name, style: AppTextStyles.boardLabel.copyWith(color: AppPalette.textPrimary, fontSize: 30)),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppSpacing.sm),
                         Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
+                          spacing: AppSpacing.sm,
+                          runSpacing: AppSpacing.sm,
                           children: [
                             _pill('CODE', code, emphasize: true),
                             AppMetaPill(text: 'Players ${members.length}/${lobbyController.maxPlayers}'),
@@ -95,7 +96,7 @@ class _LobbyRoomScreenState extends State<LobbyRoomScreen> {
                             AppMetaPill(text: isHost ? 'You are host' : 'Waiting for host'),
                           ],
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: AppSpacing.md),
                         Row(
                           children: [
                             Tooltip(
@@ -106,19 +107,19 @@ class _LobbyRoomScreenState extends State<LobbyRoomScreen> {
                                 label: Text(_busy ? 'Starting match...' : 'Start Match'),
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: AppSpacing.sm),
                             FilledButton.tonalIcon(
                               onPressed: _busy ? null : lobbyController.toggleMyReady,
                               icon: Icon(myReady ? Icons.check_circle : Icons.radio_button_unchecked),
                               label: Text(myReady ? 'Ready' : 'Mark Ready'),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: AppSpacing.sm),
                             OutlinedButton.icon(
                               onPressed: _copyCode,
                               icon: const Icon(Icons.copy),
                               label: const Text('Copy Code'),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: AppSpacing.sm),
                             OutlinedButton.icon(
                               onPressed: _busy ? null : lobbyController.refreshCurrentLobby,
                               icon: const Icon(Icons.refresh),
@@ -129,7 +130,7 @@ class _LobbyRoomScreenState extends State<LobbyRoomScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   Expanded(
                     child: Row(
                       children: [
@@ -140,20 +141,20 @@ class _LobbyRoomScreenState extends State<LobbyRoomScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text('Players', style: AppTextStyles.title),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: AppSpacing.sm),
                                 Expanded(
                                   child: members.isEmpty
                                       ? const Center(child: Text('No players joined yet.'))
                                       : ListView.separated(
                                           itemCount: members.length,
-                                          separatorBuilder: (_, __) => const SizedBox(height: 6),
+                                          separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.xs),
                                           itemBuilder: (context, i) {
                                             final m = members[i];
                                             final host = m['isHost'] as bool? ?? false;
                                             final ready = m['isReady'] as bool? ?? false;
                                             return Container(
                                               decoration: BoxDecoration(
-                                                color: host ? const Color(0xFFFFF3CD) : AppPalette.cardBg,
+                                                color: host ? AppPalette.hostHighlightBg : AppPalette.cardBg,
                                                 borderRadius: BorderRadius.circular(10),
                                                 border: Border.all(color: AppPalette.borderLight),
                                               ),
@@ -165,7 +166,7 @@ class _LobbyRoomScreenState extends State<LobbyRoomScreen> {
                                                 ),
                                                 title: Text(m['displayName']?.toString() ?? 'Player'),
                                                 trailing: Wrap(
-                                                  spacing: 6,
+                                                  spacing: AppSpacing.xs,
                                                   children: [
                                                     if (host)
                                                       Container(
@@ -196,22 +197,22 @@ class _LobbyRoomScreenState extends State<LobbyRoomScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: CommonCard(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text('How this works', style: AppTextStyles.title),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: AppSpacing.sm),
                                 const Text('1) Share the lobby code'),
-                                const SizedBox(height: 6),
+                                const SizedBox(height: AppSpacing.xs),
                                 const Text('2) Wait for players to join'),
-                                const SizedBox(height: 6),
+                                const SizedBox(height: AppSpacing.xs),
                                 const Text('3) Start Match when everyone is ready'),
                                 const Spacer(),
                                 if (_error != null)
-                                  Text(_error!, style: const TextStyle(color: Colors.red)),
+                                  Text(_error!, style: const TextStyle(color: AppPalette.danger)),
                               ],
                             ),
                           ),
@@ -230,9 +231,9 @@ class _LobbyRoomScreenState extends State<LobbyRoomScreen> {
 
   Widget _pill(String label, String value, {bool emphasize = false}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
       decoration: BoxDecoration(
-        color: emphasize ? AppPalette.white : Theme.of(context).colorScheme.surfaceContainerHigh,
+        color: emphasize ? AppPalette.white : AppPalette.cardBg,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppPalette.borderLight),
       ),
