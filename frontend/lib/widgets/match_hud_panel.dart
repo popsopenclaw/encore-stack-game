@@ -82,7 +82,7 @@ class MatchHudPanel extends StatelessWidget {
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: controller.selectedColorDie,
+                  initialValue: controller.selectedColorDie,
                   decoration: const InputDecoration(labelText: 'Color Die'),
                   items: controller.availableColorDice
                       .map((d) => DropdownMenuItem(value: d, child: Text(d)))
@@ -93,7 +93,7 @@ class MatchHudPanel extends StatelessWidget {
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: controller.selectedNumberDie,
+                  initialValue: controller.selectedNumberDie,
                   decoration: const InputDecoration(labelText: 'Number Die'),
                   items: controller.availableNumberDice
                       .map((d) => DropdownMenuItem(value: d, child: Text(_prettyEnum(d))))
