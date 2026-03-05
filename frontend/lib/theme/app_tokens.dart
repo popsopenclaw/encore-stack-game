@@ -49,5 +49,5 @@ class AppSurface extends ThemeExtension<AppSurface> {
     );
   }
 
-  static const AppSurface standard = AppSurface(boardLikePanel: AppPalette.boardFrame, panelText: AppPalette.textOnDark);
+  static const AppSurface standard = AppSurface(boardLikePanel: AppPalette.cardBg, panelText: AppPalette.textPrimary);
 }

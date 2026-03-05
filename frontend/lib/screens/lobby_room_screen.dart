@@ -83,7 +83,7 @@ class _LobbyRoomScreenState extends State<LobbyRoomScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(name, style: AppTextStyles.boardLabel.copyWith(color: AppPalette.textOnDark, fontSize: 30)),
+                        Text(name, style: AppTextStyles.boardLabel.copyWith(color: AppPalette.textPrimary, fontSize: 30)),
                         const SizedBox(height: 8),
                         Wrap(
                           spacing: 10,
@@ -232,13 +232,13 @@ class _LobbyRoomScreenState extends State<LobbyRoomScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: emphasize ? AppPalette.white : AppPalette.stripBg,
+        color: emphasize ? AppPalette.white : Theme.of(context).colorScheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppPalette.borderDark),
+        border: Border.all(color: AppPalette.borderLight),
       ),
       child: RichText(
         text: TextSpan(
-          style: TextStyle(color: emphasize ? AppPalette.textPrimary : AppPalette.textOnDark),
+          style: const TextStyle(color: AppPalette.textPrimary),
           children: [
             TextSpan(text: '$label  ', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 11)),
             TextSpan(text: value, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),

@@ -110,14 +110,14 @@ class _GameScreenState extends State<GameScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Text('MATCH HUD', style: AppTextStyles.subtitle.copyWith(color: AppPalette.textOnDark, letterSpacing: 0.8)),
+                          Text('Match HUD', style: AppTextStyles.title),
                           const SizedBox(height: 10),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                             decoration: BoxDecoration(
-                              color: AppPalette.stripBg,
+                              color: Theme.of(context).colorScheme.surfaceContainerHigh,
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: AppPalette.borderDark),
+                              border: Border.all(color: AppPalette.borderLight),
                             ),
                             child: Wrap(
                               spacing: 8,
@@ -132,17 +132,17 @@ class _GameScreenState extends State<GameScreen> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: AppPalette.stripBg,
+                              color: Theme.of(context).colorScheme.surfaceContainerHigh,
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: AppPalette.borderDark),
+                              border: Border.all(color: AppPalette.borderLight),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('CURRENT ROLL', style: AppTextStyles.boardLabel.copyWith(color: AppPalette.textOnDark)),
+                                Text('Current Roll', style: AppTextStyles.subtitle),
                                 const SizedBox(height: 8),
                                 if (colorDice.isEmpty && numberDice.isEmpty)
-                                  const Text('Roll to reveal dice', style: TextStyle(color: AppPalette.textOnDark))
+                                  const Text('Roll to reveal dice', style: AppTextStyles.body)
                                 else
                                   Wrap(
                                     spacing: 8,
@@ -170,36 +170,30 @@ class _GameScreenState extends State<GameScreen> {
                           Row(
                             children: [
                               Expanded(
-                                child: InputDecorator(
-                                  decoration: const InputDecoration(labelText: 'Color', filled: true, fillColor: AppPalette.white),
-                                  child: DropdownButtonHideUnderline(
-                                    child: DropdownButton<String>(
-                                      isExpanded: true,
-                                      value: controller.selectedColorDie,
-                                      items: controller.availableColorDice.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
-                                      onChanged: controller.setSelectedColorDie,
-                                    ),
-                                  ),
+                                child: DropdownButtonFormField<String>(
+                                  value: controller.selectedColorDie,
+                                  decoration: const InputDecoration(labelText: 'Color Die'),
+                                  items: controller.availableColorDice
+                                      .map((d) => DropdownMenuItem(value: d, child: Text(d)))
+                                      .toList(),
+                                  onChanged: controller.setSelectedColorDie,
                                 ),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: InputDecorator(
-                                  decoration: const InputDecoration(labelText: 'Number', filled: true, fillColor: AppPalette.white),
-                                  child: DropdownButtonHideUnderline(
-                                    child: DropdownButton<String>(
-                                      isExpanded: true,
-                                      value: controller.selectedNumberDie,
-                                      items: controller.availableNumberDice.map((d) => DropdownMenuItem(value: d, child: Text(_prettyEnum(d)))).toList(),
-                                      onChanged: controller.setSelectedNumberDie,
-                                    ),
-                                  ),
+                                child: DropdownButtonFormField<String>(
+                                  value: controller.selectedNumberDie,
+                                  decoration: const InputDecoration(labelText: 'Number Die'),
+                                  items: controller.availableNumberDice
+                                      .map((d) => DropdownMenuItem(value: d, child: Text(_prettyEnum(d))))
+                                      .toList(),
+                                  onChanged: controller.setSelectedNumberDie,
                                 ),
                               ),
                             ],
                           ),
                           const SizedBox(height: AppSpacing.sm),
-                          Text('Selected cells: ${controller.selectedCellIds.length}', style: const TextStyle(color: AppPalette.textOnDark)),
+                          Text('Selected cells: ${controller.selectedCellIds.length}', style: AppTextStyles.body),
                           const SizedBox(height: AppSpacing.sm),
                           Wrap(
                             spacing: 8,
@@ -216,7 +210,7 @@ class _GameScreenState extends State<GameScreen> {
                             ],
                           ),
                           const SizedBox(height: AppSpacing.md),
-                          Text(controller.status, style: const TextStyle(color: AppPalette.textOnDark)),
+                          Text(controller.status, style: AppTextStyles.body),
                         ],
                       ),
                     ),

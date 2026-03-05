@@ -17,7 +17,7 @@ class AppPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: surface.boardLikePanel,
         borderRadius: BorderRadius.circular(radius.panel),
-        boxShadow: const [BoxShadow(color: AppPalette.boardFrameShadow, blurRadius: 14, offset: Offset(0, 8))],
+        boxShadow: const [BoxShadow(color: Color(0x22000000), blurRadius: 10, offset: Offset(0, 4))],
       ),
       padding: padding,
       child: child,
@@ -33,16 +33,17 @@ class AppMetaPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final radius = Theme.of(context).extension<AppRadius>() ?? AppRadius.standard;
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: AppPalette.stripBg,
+        color: scheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(radius.pill),
-        border: Border.all(color: AppPalette.borderDark),
+        border: Border.all(color: AppPalette.borderLight),
       ),
       child: Text(
         text,
-        style: const TextStyle(color: AppPalette.textOnDark, fontSize: 12, fontWeight: FontWeight.w600),
+        style: TextStyle(color: scheme.onSurface, fontSize: 12, fontWeight: FontWeight.w600),
       ),
     );
   }
