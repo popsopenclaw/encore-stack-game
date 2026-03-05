@@ -73,7 +73,8 @@ class LobbyController extends ChangeNotifier {
   String get backendUrl => _backendUrl;
   String? get jwt => _jwt;
   String? get currentAccountId => _jwt == null ? null : _readSubFromJwt(_jwt!);
-  bool get isCurrentUserHost => currentAccountId != null && currentAccountId == hostAccountId;
+  bool _isHostForCurrentUser = false;
+  bool get isCurrentUserHost => _isHostForCurrentUser;
 
   ApiClient get _api => ApiClient(baseUrl: _backendUrl, jwt: _jwt);
 
@@ -134,6 +135,14 @@ class LobbyController extends ChangeNotifier {
     maxPlayers = (lobby['maxPlayers'] as int?) ?? 6;
     hostDisplayName = lobby['hostDisplayName']?.toString();
     hostAccountId = lobby['hostAccountId']?.toString();
+    final explicitHost = lobby['isHostForCurrentUser'];
+    if (explicitHost is bool) {
+      _isHostForCurrentUser = explicitHost;
+    } else {
+      final me = currentAccountId?.toLowerCase();
+      final host = hostAccountId?.toLowerCase();
+      _isHostForCurrentUser = me != null && host != null && me == host;
+    }
 
     final rawMembers = (lobby['members'] as List<dynamic>?) ?? const [];
     members = rawMembers
@@ -178,6 +187,7 @@ class LobbyController extends ChangeNotifier {
     lobbyName = '';
     hostDisplayName = null;
     hostAccountId = null;
+    _isHostForCurrentUser = false;
     readyByAccountId.clear();
     members = const [];
     lobbies = const [];

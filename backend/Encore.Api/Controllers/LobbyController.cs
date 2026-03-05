@@ -18,9 +18,10 @@ public class LobbyController(ILobbyUseCase lobbyUseCase, LobbyRealtimeNotifier n
     {
         try
         {
-            var lobby = await lobbyUseCase.CreateAsync(GetAccountId(), request);
+            var accountId = GetAccountId();
+            var lobby = await lobbyUseCase.CreateAsync(accountId, request);
             await notifier.LobbyUpdatedAsync(lobby);
-            return Ok(lobby);
+            return Ok(EnrichForViewer(lobby, accountId));
         }
         catch (Exception ex)
         {
@@ -33,9 +34,10 @@ public class LobbyController(ILobbyUseCase lobbyUseCase, LobbyRealtimeNotifier n
     {
         try
         {
-            var lobby = await lobbyUseCase.JoinAsync(GetAccountId(), request);
+            var accountId = GetAccountId();
+            var lobby = await lobbyUseCase.JoinAsync(accountId, request);
             await notifier.LobbyUpdatedAsync(lobby);
-            return Ok(lobby);
+            return Ok(EnrichForViewer(lobby, accountId));
         }
         catch (KeyNotFoundException ex)
         {
@@ -50,24 +52,30 @@ public class LobbyController(ILobbyUseCase lobbyUseCase, LobbyRealtimeNotifier n
     [HttpGet("{code}")]
     public async Task<IActionResult> Get(string code)
     {
+        var accountId = GetAccountId();
         var lobby = await lobbyUseCase.GetAsync(code);
         return lobby is null
             ? NotFound(ApiErrorFactory.Create("not_found", "Lobby not found", HttpContext))
-            : Ok(lobby);
+            : Ok(EnrichForViewer(lobby, accountId));
     }
 
     [HttpGet]
     public async Task<IActionResult> List([FromQuery] int limit = 20)
-        => Ok(await lobbyUseCase.ListAsync(limit));
+    {
+        var accountId = GetAccountId();
+        var lobbies = await lobbyUseCase.ListAsync(limit);
+        return Ok(lobbies.Select(l => EnrichForViewer(l, accountId)).ToList());
+    }
 
     [HttpPatch("{code}")]
     public async Task<IActionResult> Update(string code, [FromBody] UpdateLobbyRequest request)
     {
         try
         {
-            var lobby = await lobbyUseCase.UpdateAsync(GetAccountId(), code, request);
+            var accountId = GetAccountId();
+            var lobby = await lobbyUseCase.UpdateAsync(accountId, code, request);
             await notifier.LobbyUpdatedAsync(lobby);
-            return Ok(lobby);
+            return Ok(EnrichForViewer(lobby, accountId));
         }
         catch (KeyNotFoundException ex)
         {
@@ -113,6 +121,19 @@ public class LobbyController(ILobbyUseCase lobbyUseCase, LobbyRealtimeNotifier n
         if (lobby is not null) await notifier.LobbyUpdatedAsync(lobby);
         return NoContent();
     }
+
+    private static object EnrichForViewer(LobbyDto lobby, Guid viewerAccountId)
+        => new
+        {
+            lobby.Id,
+            lobby.Code,
+            lobby.Name,
+            lobby.MaxPlayers,
+            lobby.HostAccountId,
+            lobby.HostDisplayName,
+            lobby.Members,
+            isHostForCurrentUser = lobby.HostAccountId == viewerAccountId
+        };
 
     private Guid GetAccountId()
     {
