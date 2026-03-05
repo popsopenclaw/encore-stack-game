@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -19,6 +21,9 @@ class LobbyController extends ChangeNotifier {
   RealtimeStatus realtimeStatus = RealtimeStatus.disconnected;
   List<Map<String, dynamic>> lobbies = const [];
   List<Map<String, dynamic>> members = const [];
+  String? hostDisplayName;
+  String? hostAccountId;
+  final Map<String, bool> readyByAccountId = {};
 
   String _backendUrl = kBackendUrlFromBuild;
   String? _jwt;
@@ -67,6 +72,8 @@ class LobbyController extends ChangeNotifier {
 
   String get backendUrl => _backendUrl;
   String? get jwt => _jwt;
+  String? get currentAccountId => _jwt == null ? null : _readSubFromJwt(_jwt!);
+  bool get isCurrentUserHost => currentAccountId != null && currentAccountId == hostAccountId;
 
   ApiClient get _api => ApiClient(baseUrl: _backendUrl, jwt: _jwt);
 
@@ -125,15 +132,26 @@ class LobbyController extends ChangeNotifier {
     lobbyCode = (lobby['code'] as String?)?.toUpperCase();
     lobbyName = (lobby['name'] as String?) ?? '';
     maxPlayers = (lobby['maxPlayers'] as int?) ?? 6;
+    hostDisplayName = lobby['hostDisplayName']?.toString();
 
     final rawMembers = (lobby['members'] as List<dynamic>?) ?? const [];
     members = rawMembers
         .map((e) => (e as Map).map((k, v) => MapEntry('$k', v)))
-        .map((m) => {
-              ...m,
-              'isHost': (m['displayName']?.toString() ?? '') == (lobby['hostDisplayName']?.toString() ?? ''),
-            })
+        .map((m) {
+          final isHost = (m['displayName']?.toString() ?? '') == (hostDisplayName ?? '');
+          final accountId = m['accountId']?.toString() ?? '';
+          readyByAccountId.putIfAbsent(accountId, () => false);
+          return {
+            ...m,
+            'isHost': isHost,
+            'isReady': readyByAccountId[accountId] ?? false,
+          };
+        })
         .toList();
+
+    hostAccountId = members
+        .firstWhere((m) => (m['isHost'] as bool? ?? false), orElse: () => const {})['accountId']
+        ?.toString();
   }
 
   Future<void> _withStatus(String label, Future<void> Function() op) async {
@@ -160,9 +178,25 @@ class LobbyController extends ChangeNotifier {
     realtimeStatus = RealtimeStatus.disconnected;
     lobbyCode = null;
     lobbyName = '';
+    hostDisplayName = null;
+    hostAccountId = null;
+    readyByAccountId.clear();
     members = const [];
     lobbies = const [];
     status = 'Logged out';
+    notifyListeners();
+  }
+
+  void toggleMyReady() {
+    final id = currentAccountId;
+    if (id == null || id.isEmpty) return;
+    readyByAccountId[id] = !(readyByAccountId[id] ?? false);
+    members = members
+        .map((m) => {
+              ...m,
+              if ((m['accountId']?.toString() ?? '') == id) 'isReady': readyByAccountId[id],
+            })
+        .toList();
     notifyListeners();
   }
 
@@ -176,6 +210,19 @@ class LobbyController extends ChangeNotifier {
         return 'Realtime services are temporarily unavailable. Try again.';
       default:
         return e.message;
+    }
+  }
+
+  String? _readSubFromJwt(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return null;
+      final normalized = base64Url.normalize(parts[1]);
+      final payload = utf8.decode(base64Url.decode(normalized));
+      final map = jsonDecode(payload) as Map<String, dynamic>;
+      return map['sub']?.toString();
+    } catch (_) {
+      return null;
     }
   }
 

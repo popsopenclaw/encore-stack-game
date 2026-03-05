@@ -8,6 +8,7 @@ import '../theme/app_palette.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/common_card.dart';
+import '../widgets/ui_kit.dart';
 
 class LobbyRoomScreen extends StatefulWidget {
   const LobbyRoomScreen({super.key});
@@ -67,6 +68,9 @@ class _LobbyRoomScreenState extends State<LobbyRoomScreen> {
         final members = lobbyController.members;
         final name = lobbyController.lobbyName.isEmpty ? 'Untitled Lobby' : lobbyController.lobbyName;
         final code = lobbyController.lobbyCode ?? '-';
+        final isHost = lobbyController.isCurrentUserHost;
+        final myId = lobbyController.currentAccountId;
+        final myReady = myId != null ? (lobbyController.readyByAccountId[myId] ?? false) : false;
 
         return AppShell(
           title: 'Lobby Room',
@@ -75,14 +79,7 @@ class _LobbyRoomScreenState extends State<LobbyRoomScreen> {
               constraints: const BoxConstraints(maxWidth: 980),
               child: Column(
                 children: [
-                  Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: AppPalette.boardFrame,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: const [BoxShadow(color: AppPalette.boardFrameShadow, blurRadius: 14, offset: Offset(0, 8))],
-                    ),
-                    padding: const EdgeInsets.all(18),
+                  AppPanel(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -93,17 +90,27 @@ class _LobbyRoomScreenState extends State<LobbyRoomScreen> {
                           runSpacing: 10,
                           children: [
                             _pill('CODE', code, emphasize: true),
-                            _pill('PLAYERS', '${members.length}/${lobbyController.maxPlayers}'),
-                            _pill('STATUS', _busy ? 'Starting...' : 'Waiting in lobby'),
+                            AppMetaPill(text: 'Players ${members.length}/${lobbyController.maxPlayers}'),
+                            AppMetaPill(text: _busy ? 'Starting...' : 'Waiting in lobby'),
+                            AppMetaPill(text: isHost ? 'You are host' : 'Waiting for host'),
                           ],
                         ),
                         const SizedBox(height: 12),
                         Row(
                           children: [
-                            FilledButton.icon(
-                              onPressed: _busy ? null : _startMatch,
-                              icon: const Icon(Icons.play_arrow),
-                              label: Text(_busy ? 'Starting match...' : 'Start Match'),
+                            Tooltip(
+                              message: isHost ? 'Start when everyone is ready' : 'Only host can start the match',
+                              child: FilledButton.icon(
+                                onPressed: (_busy || !isHost) ? null : _startMatch,
+                                icon: const Icon(Icons.play_arrow),
+                                label: Text(_busy ? 'Starting match...' : 'Start Match'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            FilledButton.tonalIcon(
+                              onPressed: _busy ? null : lobbyController.toggleMyReady,
+                              icon: Icon(myReady ? Icons.check_circle : Icons.radio_button_unchecked),
+                              label: Text(myReady ? 'Ready' : 'Mark Ready'),
                             ),
                             const SizedBox(width: 8),
                             OutlinedButton.icon(
@@ -143,6 +150,7 @@ class _LobbyRoomScreenState extends State<LobbyRoomScreen> {
                                           itemBuilder: (context, i) {
                                             final m = members[i];
                                             final host = m['isHost'] as bool? ?? false;
+                                            final ready = m['isReady'] as bool? ?? false;
                                             return Container(
                                               decoration: BoxDecoration(
                                                 color: host ? const Color(0xFFFFF3CD) : AppPalette.cardBg,
@@ -156,16 +164,29 @@ class _LobbyRoomScreenState extends State<LobbyRoomScreen> {
                                                   child: Text((m['displayName']?.toString() ?? '?').substring(0, 1).toUpperCase()),
                                                 ),
                                                 title: Text(m['displayName']?.toString() ?? 'Player'),
-                                                trailing: host
-                                                    ? Container(
+                                                trailing: Wrap(
+                                                  spacing: 6,
+                                                  children: [
+                                                    if (host)
+                                                      Container(
                                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                                         decoration: BoxDecoration(
                                                           color: AppPalette.boardFrame,
                                                           borderRadius: BorderRadius.circular(999),
                                                         ),
                                                         child: const Text('HOST', style: TextStyle(color: AppPalette.textOnDark, fontWeight: FontWeight.w700, fontSize: 11)),
-                                                      )
-                                                    : const Text('READY'),
+                                                      ),
+                                                    Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                      decoration: BoxDecoration(
+                                                        color: ready ? AppPalette.success.withValues(alpha: 0.25) : AppPalette.cardBg,
+                                                        borderRadius: BorderRadius.circular(999),
+                                                        border: Border.all(color: AppPalette.borderLight),
+                                                      ),
+                                                      child: Text(ready ? 'READY' : 'NOT READY', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11)),
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
                                             );
                                           },

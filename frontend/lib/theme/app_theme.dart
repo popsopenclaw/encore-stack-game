@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_palette.dart';
+import 'app_tokens.dart';
 
 class AppTheme {
   static ThemeData get light => ThemeData(
@@ -19,5 +20,9 @@ class AppTheme {
         inputDecorationTheme: const InputDecorationTheme(
           border: OutlineInputBorder(),
         ),
+        extensions: const [
+          AppRadius.standard,
+          AppSurface.standard,
+        ],
       );
 }

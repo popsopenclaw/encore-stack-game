@@ -9,6 +9,7 @@ import '../theme/app_text_styles.dart';
 import '../widgets/board_sheet.dart';
 import '../widgets/common_card.dart';
 import '../widgets/game_audit_panel.dart';
+import '../widgets/ui_kit.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -105,15 +106,7 @@ class _GameScreenState extends State<GameScreen> {
                 child: ListView(
                   padding: const EdgeInsets.all(12),
                   children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppPalette.boardFrame,
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: const [
-                          BoxShadow(color: AppPalette.boardFrameShadow, blurRadius: 14, offset: Offset(0, 8)),
-                        ],
-                      ),
-                      padding: const EdgeInsets.all(14),
+                    AppPanel(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
@@ -130,8 +123,8 @@ class _GameScreenState extends State<GameScreen> {
                               spacing: 8,
                               runSpacing: 6,
                               children: [
-                                _metaPill('Phase ${controller.phase}'),
-                                if (controller.sessionId != null) _metaPill('Session ${controller.sessionId!.substring(0, 8)}'),
+                                AppMetaPill(text: 'Phase ${controller.phase}'),
+                                if (controller.sessionId != null) AppMetaPill(text: 'Session ${controller.sessionId!.substring(0, 8)}'),
                               ],
                             ),
                           ),
@@ -272,21 +265,6 @@ class _GameScreenState extends State<GameScreen> {
         border: Border.all(color: AppPalette.borderDark),
       ),
       child: Text(text, style: TextStyle(color: fg, fontWeight: FontWeight.w700)),
-    );
-  }
-
-  Widget _metaPill(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppPalette.boardFrame,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppPalette.borderDark),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(color: AppPalette.textOnDark, fontSize: 12, fontWeight: FontWeight.w600),
-      ),
     );
   }
 
