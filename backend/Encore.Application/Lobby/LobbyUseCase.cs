@@ -145,6 +145,7 @@ public class LobbyUseCase(ILobbyRepository repository, IConfiguration configurat
             lobby.Code,
             lobby.Name,
             lobby.MaxPlayers,
+            lobby.HostAccountId,
             lobby.Members.FirstOrDefault(m => m.AccountId == lobby.HostAccountId)?.DisplayName ?? "Host",
             lobby.Members.Select(m => new LobbyMemberDto(m.AccountId, m.DisplayName, m.JoinedAt)).ToList()
         );

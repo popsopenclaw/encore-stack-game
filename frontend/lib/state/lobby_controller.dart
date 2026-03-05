@@ -133,13 +133,14 @@ class LobbyController extends ChangeNotifier {
     lobbyName = (lobby['name'] as String?) ?? '';
     maxPlayers = (lobby['maxPlayers'] as int?) ?? 6;
     hostDisplayName = lobby['hostDisplayName']?.toString();
+    hostAccountId = lobby['hostAccountId']?.toString();
 
     final rawMembers = (lobby['members'] as List<dynamic>?) ?? const [];
     members = rawMembers
         .map((e) => (e as Map).map((k, v) => MapEntry('$k', v)))
         .map((m) {
-          final isHost = (m['displayName']?.toString() ?? '') == (hostDisplayName ?? '');
           final accountId = m['accountId']?.toString() ?? '';
+          final isHost = accountId.isNotEmpty && accountId == hostAccountId;
           readyByAccountId.putIfAbsent(accountId, () => false);
           return {
             ...m,
@@ -149,9 +150,6 @@ class LobbyController extends ChangeNotifier {
         })
         .toList();
 
-    hostAccountId = members
-        .firstWhere((m) => (m['isHost'] as bool? ?? false), orElse: () => const {})['accountId']
-        ?.toString();
   }
 
   Future<void> _withStatus(String label, Future<void> Function() op) async {

@@ -10,7 +10,7 @@ public class FakeLobbyUseCase : ILobbyUseCase
     public Task<LobbyDto> CreateAsync(Guid accountId, CreateLobbyRequest request, CancellationToken cancellationToken = default)
     {
         var code = Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
-        var dto = new LobbyDto(Guid.NewGuid(), code, request.Name, request.MaxPlayers, request.HostDisplayName,
+        var dto = new LobbyDto(Guid.NewGuid(), code, request.Name, request.MaxPlayers, accountId, request.HostDisplayName,
             [new LobbyMemberDto(accountId, request.HostDisplayName, DateTimeOffset.UtcNow)]);
         _store[code] = dto;
         return Task.FromResult(dto);
