@@ -27,4 +27,23 @@ class AppPalette {
   static const borderDark = Color(0x8A000000);
   static const success = Color(0xFF7CFC98);
   static const danger = Color(0xFFFF6A6A);
+
+  static const hostHighlightBg = Color(0xFFFFF3CD);
+
+  static Color fromGameColor(String colorName) {
+    switch (colorName.toLowerCase()) {
+      case 'yellow':
+        return tileYellow;
+      case 'orange':
+        return tileOrange;
+      case 'blue':
+        return tileBlue;
+      case 'green':
+        return tileGreen;
+      case 'purple':
+        return tilePurple;
+      default:
+        return grey;
+    }
+  }
 }
