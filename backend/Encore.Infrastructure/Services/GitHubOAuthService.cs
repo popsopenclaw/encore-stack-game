@@ -12,10 +12,14 @@ public class GitHubOAuthService(IHttpClientFactory httpClientFactory, IConfigura
     public string BuildAuthorizeUrl(string? state)
     {
         var clientId = configuration["GitHubOAuth:ClientId"] ?? throw new InvalidOperationException("Missing GitHub OAuth client id");
-        var redirectUri = configuration["GitHubOAuth:RedirectUri"] ?? throw new InvalidOperationException("Missing GitHub redirect uri");
-        var encodedRedirect = Uri.EscapeDataString(redirectUri);
+        var redirectUri = configuration["GitHubOAuth:RedirectUri"];
         var encodedState = Uri.EscapeDataString(state ?? Guid.NewGuid().ToString("N"));
-        return $"https://github.com/login/oauth/authorize?client_id={clientId}&redirect_uri={encodedRedirect}&scope=read:user%20user:email&state={encodedState}";
+
+        var baseUrl = $"https://github.com/login/oauth/authorize?client_id={Uri.EscapeDataString(clientId)}&scope=read:user%20user:email&state={encodedState}";
+        if (string.IsNullOrWhiteSpace(redirectUri))
+            return baseUrl;
+
+        return $"{baseUrl}&redirect_uri={Uri.EscapeDataString(redirectUri)}";
     }
 
     public async Task<Account> ExchangeCodeAndUpsertAsync(string code, CancellationToken cancellationToken)
