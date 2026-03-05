@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
+import '../app/router.dart';
 import '../state/auth_session_controller.dart';
 import '../state/game_controller.dart';
 import '../state/lobby_controller.dart';
-import '../app/router.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
-import '../widgets/backend_url_section.dart';
 import '../widgets/board_sheet.dart';
 import '../widgets/common_card.dart';
-import '../widgets/primary_actions_section.dart';
 import '../widgets/game_audit_panel.dart';
 
 class GameScreen extends StatefulWidget {
@@ -74,7 +71,7 @@ class _GameScreenState extends State<GameScreen> {
           body: Row(
             children: [
               SizedBox(
-                width: 390,
+                width: 420,
                 child: ListView(
                   padding: const EdgeInsets.all(12),
                   children: [
@@ -82,90 +79,72 @@ class _GameScreenState extends State<GameScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          BackendUrlSection(
-                            controller: controller.backendUrl,
-                            onSave: controller.saveBackendUrl,
-                            onUseLocal: controller.setLocalBackend,
-                            onUseProduction: controller.setProductionBackend,
-                          ),
-                          Text('Connection', style: AppTextStyles.subtitle),
-                        const SizedBox(height: AppSpacing.xs),
-                        TextField(controller: controller.players, decoration: const InputDecoration(labelText: 'Players comma-separated')),
+                          Text('Match Controls', style: AppTextStyles.subtitle),
+                          const SizedBox(height: AppSpacing.sm),
+                          if (lobbyController.lobbyCode != null)
+                            Text(
+                              'Lobby: ${lobbyController.lobbyCode} • ${lobbyController.lobbyName.isEmpty ? 'Untitled' : lobbyController.lobbyName}',
+                            ),
+                          Text('Realtime: ${lobbyController.realtimeStatus.name}'),
+                          const SizedBox(height: AppSpacing.sm),
+                          Text('Phase: ${controller.phase}'),
+                          if (controller.sessionId != null) Text('Session: ${controller.sessionId}'),
                           const SizedBox(height: AppSpacing.md),
-                          Text('Session Actions', style: AppTextStyles.subtitle),
-                          const SizedBox(height: AppSpacing.xs),
-                          PrimaryActionsSection(
-                            onOAuthUrl: () => controller.githubLoginUrl(
-                              (url) => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
-                            ),
-                            onExchange: controller.exchange,
-                            onStartGame: controller.startGame,
-                            onReload: controller.reloadState,
-                            onRoll: controller.canRoll ? controller.roll : null,
-                            onActivePass: controller.canActivePass ? controller.activePass : null,
-                            onAllPass: controller.allPassOnce,
-                            onScoreEvents: controller.loadScoreAndEvents,
-                          ),
-                          TextField(controller: controller.oauthCode, decoration: const InputDecoration(labelText: 'OAuth code')),
-                          const SizedBox(height: 8),
-                          OutlinedButton(
-                            onPressed: controller.canLoadAvailableDice ? controller.loadAvailableDiceForCurrentPlayer : null,
-                            child: const Text('Load Available Dice'),
-                          ),
-                          const SizedBox(height: 6),
-                          InputDecorator(
-                            decoration: const InputDecoration(labelText: 'Selected Color Die'),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                isExpanded: true,
-                                value: controller.selectedColorDie,
-                                items: controller.availableColorDice
-                                    .map((d) => DropdownMenuItem(value: d, child: Text(d)))
-                                    .toList(),
-                                onChanged: controller.setSelectedColorDie,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          InputDecorator(
-                            decoration: const InputDecoration(labelText: 'Selected Number Die'),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                isExpanded: true,
-                                value: controller.selectedNumberDie,
-                                items: controller.availableNumberDice
-                                    .map((d) => DropdownMenuItem(value: d, child: Text(d)))
-                                    .toList(),
-                                onChanged: controller.setSelectedNumberDie,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
                           Wrap(
                             spacing: 8,
                             runSpacing: 8,
                             children: [
-                              OutlinedButton(
-                                onPressed: controller.canSubmitActiveSelection ? controller.submitActiveSelection : null,
-                                child: const Text('Submit Active Selection'),
+                              ElevatedButton(onPressed: controller.canRoll ? controller.roll : null, child: const Text('Roll Dice')),
+                              OutlinedButton(onPressed: controller.canActivePass ? controller.activePass : null, child: const Text('Active Pass')),
+                              OutlinedButton(onPressed: controller.reloadState, child: const Text('Refresh State')),
+                              OutlinedButton(onPressed: controller.loadScoreAndEvents, child: const Text('Refresh Score & Timeline')),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          InputDecorator(
+                            decoration: const InputDecoration(labelText: 'Color die'),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                isExpanded: true,
+                                value: controller.selectedColorDie,
+                                items: controller.availableColorDice.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+                                onChanged: controller.setSelectedColorDie,
                               ),
-                              OutlinedButton(
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          InputDecorator(
+                            decoration: const InputDecoration(labelText: 'Number die'),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                isExpanded: true,
+                                value: controller.selectedNumberDie,
+                                items: controller.availableNumberDice.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+                                onChanged: controller.setSelectedNumberDie,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          Text('Selected cells: ${controller.selectedCellIds.length}'),
+                          const SizedBox(height: AppSpacing.sm),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              ElevatedButton(
+                                onPressed: controller.canSubmitActiveSelection ? controller.submitActiveSelection : null,
+                                child: const Text('Confirm Active Selection'),
+                              ),
+                              ElevatedButton(
                                 onPressed: controller.canSubmitMove ? controller.submitPlayerMove : null,
-                                child: const Text('Submit Move (Selected Cells)'),
+                                child: const Text('Submit Move'),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
-                          Text('Phase: ${controller.phase}'),
+                          const SizedBox(height: AppSpacing.md),
                           Text(controller.status),
-                          if (controller.sessionId != null) Text('Session: ${controller.sessionId}'),
-                          if (controller.scores.isNotEmpty) Text('Scores loaded: ${controller.scores.length}'),
-                          if (controller.events.isNotEmpty) Text('Events loaded: ${controller.events.length}'),
-                        if (lobbyController.lobbyCode != null)
-                          Text('Lobby: ${lobbyController.lobbyCode} • ${lobbyController.lobbyName.isEmpty ? 'Untitled' : lobbyController.lobbyName}'),
-                        Text('Realtime: ${lobbyController.realtimeStatus.name}'),
-                        const SizedBox(height: 8),
-                        GameAuditPanel(scores: controller.scores, events: controller.events),
+                          const SizedBox(height: AppSpacing.md),
+                          GameAuditPanel(scores: controller.scores, events: controller.events),
                         ],
                       ),
                     ),
@@ -175,7 +154,19 @@ class _GameScreenState extends State<GameScreen> {
               Expanded(
                 child: CommonCard(
                   child: board.isEmpty
-                      ? const Center(child: Text('Start a game to render board'))
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text('No active match yet.'),
+                              const SizedBox(height: 12),
+                              ElevatedButton(
+                                onPressed: () => Navigator.pushNamed(context, AppRoutes.createLobby),
+                                child: const Text('Create Lobby'),
+                              ),
+                            ],
+                          ),
+                        )
                       : BoardSheet(
                           board: board,
                           colorFor: _cellColor,

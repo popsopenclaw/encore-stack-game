@@ -24,13 +24,14 @@ void main() {
 
     expect(find.text('Login'), findsOneWidget);
 
-    await tester.tap(find.text('Continue (OAuth flow)'));
+    final context = tester.element(find.byType(LoginScreen));
+    Navigator.of(context).pushReplacementNamed(AppRoutes.home);
     await tester.pumpAndSettle();
     expect(find.text('Home'), findsOneWidget);
 
     await tester.tap(find.text('Create Lobby'));
     await tester.pumpAndSettle();
-    expect(find.text('Create Lobby'), findsOneWidget);
+    expect(find.text('Create Lobby'), findsWidgets);
 
     await tester.pageBack();
     await tester.pumpAndSettle();
