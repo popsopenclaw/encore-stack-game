@@ -25,6 +25,27 @@ class AppPanel extends StatelessWidget {
   }
 }
 
+class DieChip extends StatelessWidget {
+  const DieChip({super.key, required this.text, required this.bg, required this.fg});
+
+  final String text;
+  final Color bg;
+  final Color fg;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppPalette.borderDark),
+      ),
+      child: Text(text, style: TextStyle(color: fg, fontWeight: FontWeight.w700)),
+    );
+  }
+}
+
 class AppMetaPill extends StatelessWidget {
   const AppMetaPill({super.key, required this.text});
 

@@ -5,11 +5,10 @@ import '../state/auth_session_controller.dart';
 import '../state/game_controller.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
-import '../theme/app_text_styles.dart';
 import '../widgets/board_sheet.dart';
 import '../widgets/common_card.dart';
 import '../widgets/game_audit_panel.dart';
-import '../widgets/ui_kit.dart';
+import '../widgets/match_hud_panel.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -46,40 +45,6 @@ class _GameScreenState extends State<GameScreen> {
     super.dispose();
   }
 
-  Color _cellColor(String colorName) {
-    switch (colorName.toLowerCase()) {
-      case 'yellow':
-        return AppPalette.tileYellow;
-      case 'orange':
-        return AppPalette.tileOrange;
-      case 'blue':
-        return AppPalette.tileBlue;
-      case 'green':
-        return AppPalette.tileGreen;
-      case 'purple':
-        return AppPalette.tilePurple;
-      default:
-        return AppPalette.grey;
-    }
-  }
-
-  Color _dieColor(String die) {
-    switch (die.toLowerCase()) {
-      case 'yellow':
-        return AppPalette.tileYellow;
-      case 'orange':
-        return AppPalette.tileOrange;
-      case 'blue':
-        return AppPalette.tileBlue;
-      case 'green':
-        return AppPalette.tileGreen;
-      case 'purple':
-        return AppPalette.tilePurple;
-      default:
-        return AppPalette.white;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     if (authSessionController.initialized && !authSessionController.hasSession) {
@@ -93,128 +58,18 @@ class _GameScreenState extends State<GameScreen> {
       animation: Listenable.merge([controller, authSessionController]),
       builder: (context, _) {
         final board = (controller.state?['board'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
-        final currentRoll = controller.state?['currentRoll'] as Map<String, dynamic>?;
-        final colorDice = ((currentRoll?['colorDice'] as List<dynamic>?) ?? const []).map((e) => '$e').toList();
-        final numberDice = ((currentRoll?['numberDice'] as List<dynamic>?) ?? const []).map((e) => '$e').toList();
 
         return Scaffold(
           appBar: AppBar(title: const Text('Game')),
           body: Row(
             children: [
-              SizedBox(
-                width: 430,
+              Expanded(
+                flex: 2,
                 child: ListView(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   children: [
-                    AppPanel(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text('Match HUD', style: AppTextStyles.title),
-                          const SizedBox(height: 10),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: AppPalette.borderLight),
-                            ),
-                            child: Wrap(
-                              spacing: 8,
-                              runSpacing: 6,
-                              children: [
-                                AppMetaPill(text: 'Phase ${controller.phase}'),
-                                if (controller.sessionId != null) AppMetaPill(text: 'Session ${controller.sessionId!.substring(0, 8)}'),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: AppPalette.borderLight),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Current Roll', style: AppTextStyles.subtitle),
-                                const SizedBox(height: 8),
-                                if (colorDice.isEmpty && numberDice.isEmpty)
-                                  const Text('Roll to reveal dice', style: AppTextStyles.body)
-                                else
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: [
-                                      ...colorDice.map((d) => _dieChip(d, _dieColor(d), AppPalette.textPrimary)),
-                                      ...numberDice.map((d) => _dieChip(_prettyEnum(d), AppPalette.white, AppPalette.textPrimary)),
-                                    ],
-                                  ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              FilledButton(onPressed: controller.canRoll ? controller.roll : null, child: const Text('Roll')),
-                              FilledButton.tonal(onPressed: controller.canActivePass ? controller.activePass : null, child: const Text('Pass')),
-                              OutlinedButton(onPressed: controller.reloadState, child: const Text('Refresh')),
-                              OutlinedButton(onPressed: controller.loadScoreAndEvents, child: const Text('Score/Timeline')),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: DropdownButtonFormField<String>(
-                                  value: controller.selectedColorDie,
-                                  decoration: const InputDecoration(labelText: 'Color Die'),
-                                  items: controller.availableColorDice
-                                      .map((d) => DropdownMenuItem(value: d, child: Text(d)))
-                                      .toList(),
-                                  onChanged: controller.setSelectedColorDie,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: DropdownButtonFormField<String>(
-                                  value: controller.selectedNumberDie,
-                                  decoration: const InputDecoration(labelText: 'Number Die'),
-                                  items: controller.availableNumberDice
-                                      .map((d) => DropdownMenuItem(value: d, child: Text(_prettyEnum(d))))
-                                      .toList(),
-                                  onChanged: controller.setSelectedNumberDie,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: AppSpacing.sm),
-                          Text('Selected cells: ${controller.selectedCellIds.length}', style: AppTextStyles.body),
-                          const SizedBox(height: AppSpacing.sm),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              FilledButton(
-                                onPressed: controller.canSubmitActiveSelection ? controller.submitActiveSelection : null,
-                                child: const Text('Confirm Active Selection'),
-                              ),
-                              FilledButton(
-                                onPressed: controller.canSubmitMove ? controller.submitPlayerMove : null,
-                                child: const Text('Submit Move'),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          Text(controller.status, style: AppTextStyles.body),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
+                    MatchHudPanel(controller: controller),
+                    const SizedBox(height: AppSpacing.sm),
                     CommonCard(child: GameAuditPanel(scores: controller.scores, events: controller.events)),
                   ],
                 ),
@@ -227,7 +82,7 @@ class _GameScreenState extends State<GameScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               const Text('No active game loaded.'),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: AppSpacing.md),
                               OutlinedButton(
                                 onPressed: () => Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (_) => false),
                                 child: const Text('Back to Home'),
@@ -237,7 +92,7 @@ class _GameScreenState extends State<GameScreen> {
                         )
                       : BoardSheet(
                           board: board,
-                          colorFor: _cellColor,
+                          colorFor: AppPalette.fromGameColor,
                           selectedCellIds: controller.selectedCellIds,
                           onCellTap: controller.toggleCellSelection,
                         ),
@@ -248,22 +103,5 @@ class _GameScreenState extends State<GameScreen> {
         );
       },
     );
-  }
-
-  Widget _dieChip(String text, Color bg, Color fg) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppPalette.borderDark),
-      ),
-      child: Text(text, style: TextStyle(color: fg, fontWeight: FontWeight.w700)),
-    );
-  }
-
-  String _prettyEnum(String raw) {
-    final s = raw.replaceAllMapped(RegExp(r'([a-z])([A-Z])'), (m) => '${m[1]} ${m[2]}');
-    return s[0].toUpperCase() + s.substring(1);
   }
 }
