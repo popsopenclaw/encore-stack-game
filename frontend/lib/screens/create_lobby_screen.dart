@@ -17,31 +17,17 @@ class CreateLobbyScreen extends StatefulWidget {
 }
 
 class _CreateLobbyScreenState extends State<CreateLobbyScreen> {
-  final _name = TextEditingController(text: 'Encore Lobby');
   int _maxPlayers = 4;
   bool _creating = false;
   String? _error;
 
-  @override
-  void dispose() {
-    _name.dispose();
-    super.dispose();
-  }
-
   Future<void> _create() async {
-    final lobbyName = _name.text.trim();
-
-    if (lobbyName.isEmpty) {
-      setState(() => _error = 'Lobby name is required.');
-      return;
-    }
-
     setState(() {
       _creating = true;
       _error = null;
     });
 
-    await lobbyController.createLobby(name: lobbyName, max: _maxPlayers);
+    await lobbyController.createLobby(max: _maxPlayers);
 
     if (!mounted) return;
     setState(() => _creating = false);
@@ -71,7 +57,7 @@ class _CreateLobbyScreenState extends State<CreateLobbyScreen> {
                     const Text('Create Lobby', style: AppTextStyles.title),
                     const SizedBox(height: AppSpacing.xs),
                     const Text(
-                      'Configure your room and launch a multiplayer session. Your saved player name will be used automatically.',
+                      'Configure your room and launch a multiplayer session. The lobby name will be generated from your saved player name automatically.',
                       style: AppTextStyles.bodyMuted,
                     ),
                     const SizedBox(height: AppSpacing.md),
@@ -85,13 +71,6 @@ class _CreateLobbyScreenState extends State<CreateLobbyScreen> {
                       ],
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    TextField(
-                      controller: _name,
-                      decoration: const InputDecoration(
-                        labelText: 'Lobby name',
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
                     const Text('Max players', style: AppTextStyles.subtitle),
                     Slider(
                       value: _maxPlayers.toDouble(),

@@ -202,14 +202,11 @@ class ApiClient {
     return _decodeList(r);
   }
 
-  Future<Map<String, dynamic>> createLobby({
-    required String name,
-    required int maxPlayers,
-  }) async {
+  Future<Map<String, dynamic>> createLobby({required int maxPlayers}) async {
     final r = await _http.post(
       _u('/api/lobby'),
       headers: _jsonHeaders,
-      body: jsonEncode({'name': name, 'maxPlayers': maxPlayers}),
+      body: jsonEncode({'maxPlayers': maxPlayers}),
     );
     return _decodeMap(r);
   }

@@ -85,6 +85,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasIndex(m => new { m.LobbyId, m.AccountId })
             .IsUnique();
 
+        modelBuilder.Entity<LobbyMember>()
+            .HasIndex(m => m.AccountId)
+            .IsUnique();
+
         modelBuilder.Entity<Lobby>()
             .HasMany(l => l.Members)
             .WithOne(m => m.Lobby)

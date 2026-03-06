@@ -78,8 +78,8 @@ void main() {
       final mock = MockClient((request) async {
         expect(request.url.path, '/api/lobby');
         final body = jsonDecode(request.body) as Map<String, dynamic>;
-        expect(body['name'], 'My Lobby');
         expect(body['maxPlayers'], 4);
+        expect(body.containsKey('name'), isFalse);
         expect(body.containsKey('hostDisplayName'), isFalse);
         return http.Response(jsonEncode({'code': 'ABC123'}), 200);
       });
@@ -89,7 +89,7 @@ void main() {
         jwt: 't',
         httpClient: mock,
       );
-      await api.createLobby(name: 'My Lobby', maxPlayers: 4);
+      await api.createLobby(maxPlayers: 4);
     });
 
     test('sends join lobby request without display name fields', () async {

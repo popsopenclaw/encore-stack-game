@@ -20,7 +20,9 @@ public class LobbyController(ILobbyUseCase lobbyUseCase, LobbyRealtimeNotifier n
         try
         {
             var accountId = User.GetRequiredAccountId();
+            var previousLobby = await lobbyUseCase.GetForAccountAsync(accountId);
             var lobby = await lobbyUseCase.CreateAsync(accountId, request);
+            await NotifyPreviousLobbyIfChangedAsync(previousLobby?.Code, lobby.Code);
             await notifier.LobbyUpdatedAsync(lobby);
             return Ok(EnrichForViewer(lobby, accountId));
         }
@@ -40,7 +42,9 @@ public class LobbyController(ILobbyUseCase lobbyUseCase, LobbyRealtimeNotifier n
         try
         {
             var accountId = User.GetRequiredAccountId();
+            var previousLobby = await lobbyUseCase.GetForAccountAsync(accountId);
             var lobby = await lobbyUseCase.JoinAsync(accountId, request);
+            await NotifyPreviousLobbyIfChangedAsync(previousLobby?.Code, lobby.Code);
             await notifier.LobbyUpdatedAsync(lobby);
             return Ok(EnrichForViewer(lobby, accountId));
         }
@@ -139,6 +143,17 @@ public class LobbyController(ILobbyUseCase lobbyUseCase, LobbyRealtimeNotifier n
         var lobby = await lobbyUseCase.GetAsync(code);
         if (lobby is not null) await notifier.LobbyUpdatedAsync(lobby);
         return NoContent();
+    }
+
+    private async Task NotifyPreviousLobbyIfChangedAsync(string? previousCode, string currentCode)
+    {
+        if (string.IsNullOrWhiteSpace(previousCode) ||
+            string.Equals(previousCode, currentCode, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        var previousLobby = await lobbyUseCase.GetAsync(previousCode);
+        if (previousLobby is not null)
+            await notifier.LobbyUpdatedAsync(previousLobby);
     }
 
     private static object EnrichForViewer(LobbyDto lobby, Guid viewerAccountId)

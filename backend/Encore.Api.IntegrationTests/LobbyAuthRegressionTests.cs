@@ -18,7 +18,7 @@ public class LobbyAuthRegressionTests : IClassFixture<ApiWebFactory>
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/lobby")
         {
-            Content = JsonContent.Create(new CreateLobbyRequest("My Lobby", 4))
+            Content = JsonContent.Create(new CreateLobbyRequest(4))
         };
         request.Headers.Add("X-Test-Sub", "not-a-guid");
 

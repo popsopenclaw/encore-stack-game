@@ -20,17 +20,20 @@ public class LobbyUseCaseTests
 
         var hostId = Guid.NewGuid();
         var otherId = Guid.NewGuid();
+        var thirdId = Guid.NewGuid();
         accounts.Add(hostId, "Host");
         accounts.Add(otherId, "P2");
+        accounts.Add(thirdId, "P3");
 
-        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4));
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest(4));
         await useCase.JoinAsync(otherId, new JoinLobbyRequest(created.Code));
+        await useCase.JoinAsync(thirdId, new JoinLobbyRequest(created.Code));
 
         await useCase.LeaveAsync(hostId, created.Code);
 
         var lobby = await repo.GetByCodeAsync(created.Code);
         Assert.NotNull(lobby);
-        Assert.Equal(otherId, lobby!.HostAccountId);
+        Assert.Contains(lobby!.HostAccountId, [otherId, thirdId]);
     }
 
     [Fact]
@@ -42,7 +45,7 @@ public class LobbyUseCaseTests
 
         var hostId = Guid.NewGuid();
         accounts.Add(hostId, "Host");
-        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4));
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest(4));
 
         await useCase.LeaveAsync(hostId, created.Code);
 
@@ -62,11 +65,11 @@ public class LobbyUseCaseTests
         accounts.Add(hostId, "Host");
         accounts.Add(userId, "User");
 
-        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4));
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest(4));
         await useCase.JoinAsync(userId, new JoinLobbyRequest(created.Code));
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            useCase.UpdateAsync(userId, created.Code, new UpdateLobbyRequest("Nope", 4)));
+            useCase.UpdateAsync(userId, created.Code, new UpdateLobbyRequest(4)));
     }
 
     [Fact]
@@ -78,11 +81,11 @@ public class LobbyUseCaseTests
 
         var hostId = Guid.NewGuid();
         accounts.Add(hostId, "Host");
-        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4));
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest(4));
 
-        var updated = await useCase.UpdateAsync(hostId, created.Code, new UpdateLobbyRequest("Renamed", 5));
+        var updated = await useCase.UpdateAsync(hostId, created.Code, new UpdateLobbyRequest(5));
 
-        Assert.Equal("Renamed", updated.Name);
+        Assert.Equal("Host's lobby", updated.Name);
         Assert.Equal(5, updated.MaxPlayers);
     }
 
@@ -95,7 +98,7 @@ public class LobbyUseCaseTests
 
         var hostId = Guid.NewGuid();
         accounts.Add(hostId, "Host");
-        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4));
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest(4));
 
         var lobby = await repo.GetByCodeAsync(created.Code);
         lobby!.CreatedAt = DateTimeOffset.UtcNow.AddHours(-2);
@@ -119,7 +122,7 @@ public class LobbyUseCaseTests
         accounts.Add(hostId, "Host");
         accounts.Add(userId, "User");
 
-        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4));
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest(4));
         await useCase.JoinAsync(userId, new JoinLobbyRequest(created.Code));
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
@@ -135,7 +138,7 @@ public class LobbyUseCaseTests
 
         var hostId = Guid.NewGuid();
         accounts.Add(hostId, "Host");
-        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4));
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest(4));
 
         var sessionId = await useCase.StartMatchAsync(hostId, created.Code, new StartLobbyMatchRequest("Game"));
         Assert.False(string.IsNullOrWhiteSpace(sessionId));
@@ -154,7 +157,7 @@ public class LobbyUseCaseTests
 
         var hostId = Guid.NewGuid();
         accounts.Add(hostId, "Host");
-        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4));
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest(4));
 
         var firstSessionId = await useCase.StartMatchAsync(hostId, created.Code, new StartLobbyMatchRequest("Game"));
         var secondSessionId = await useCase.StartMatchAsync(hostId, created.Code, new StartLobbyMatchRequest("Game"));
@@ -174,9 +177,10 @@ public class LobbyUseCaseTests
         accounts.Add(hostId, "ember-rook-12");
         accounts.Add(userId, "tidal-otter-31");
 
-        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4));
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest(4));
         var joined = await useCase.JoinAsync(userId, new JoinLobbyRequest(created.Code));
 
+        Assert.Equal("ember-rook-12's lobby", joined.Name);
         Assert.Equal("ember-rook-12", joined.HostDisplayName);
         Assert.Contains(joined.Members, m => m.DisplayName == "tidal-otter-31");
     }
@@ -189,7 +193,7 @@ public class LobbyUseCaseTests
         var useCase = CreateUseCase(repo, accounts, staleHours: 24);
 
         await Assert.ThrowsAsync<InvalidSessionException>(() =>
-            useCase.CreateAsync(Guid.NewGuid(), new CreateLobbyRequest("L", 4)));
+            useCase.CreateAsync(Guid.NewGuid(), new CreateLobbyRequest(4)));
     }
 
     [Fact]
@@ -201,10 +205,75 @@ public class LobbyUseCaseTests
 
         var hostId = Guid.NewGuid();
         accounts.Add(hostId, "Host");
-        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4));
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest(4));
 
         await Assert.ThrowsAsync<InvalidSessionException>(() =>
             useCase.JoinAsync(Guid.NewGuid(), new JoinLobbyRequest(created.Code)));
+    }
+
+    [Fact]
+    public async Task CreatingLobby_UsesHostPlayerNameForLobbyName()
+    {
+        var repo = new FakeLobbyRepository();
+        var accounts = new FakeAccountRepository();
+        var useCase = CreateUseCase(repo, accounts, staleHours: 24);
+
+        var hostId = Guid.NewGuid();
+        accounts.Add(hostId, "ember-rook-12");
+
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest(4));
+
+        Assert.Equal("ember-rook-12's lobby", created.Name);
+    }
+
+    [Fact]
+    public async Task CreateAsync_LeavesExistingLobbyBeforeCreatingNewOne()
+    {
+        var repo = new FakeLobbyRepository();
+        var accounts = new FakeAccountRepository();
+        var useCase = CreateUseCase(repo, accounts, staleHours: 24);
+
+        var hostId = Guid.NewGuid();
+        var otherId = Guid.NewGuid();
+        accounts.Add(hostId, "Host");
+        accounts.Add(otherId, "Other");
+
+        var original = await useCase.CreateAsync(otherId, new CreateLobbyRequest(4));
+        await useCase.JoinAsync(hostId, new JoinLobbyRequest(original.Code));
+
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest(3));
+
+        var previousLobby = await repo.GetByCodeAsync(original.Code);
+        Assert.NotNull(previousLobby);
+        Assert.DoesNotContain(previousLobby!.Members, m => m.AccountId == hostId);
+        Assert.Equal(created.Code, (await useCase.GetForAccountAsync(hostId))!.Code);
+    }
+
+    [Fact]
+    public async Task JoinAsync_LeavesExistingLobbyBeforeJoiningAnother()
+    {
+        var repo = new FakeLobbyRepository();
+        var accounts = new FakeAccountRepository();
+        var useCase = CreateUseCase(repo, accounts, staleHours: 24);
+
+        var playerId = Guid.NewGuid();
+        var firstHostId = Guid.NewGuid();
+        var secondHostId = Guid.NewGuid();
+        accounts.Add(playerId, "Player");
+        accounts.Add(firstHostId, "Host1");
+        accounts.Add(secondHostId, "Host2");
+
+        var first = await useCase.CreateAsync(firstHostId, new CreateLobbyRequest(4));
+        var second = await useCase.CreateAsync(secondHostId, new CreateLobbyRequest(4));
+        await useCase.JoinAsync(playerId, new JoinLobbyRequest(first.Code));
+
+        var joined = await useCase.JoinAsync(playerId, new JoinLobbyRequest(second.Code));
+
+        var firstLobby = await repo.GetByCodeAsync(first.Code);
+        Assert.NotNull(firstLobby);
+        Assert.DoesNotContain(firstLobby!.Members, m => m.AccountId == playerId);
+        Assert.Contains(joined.Members, m => m.AccountId == playerId);
+        Assert.Equal(second.Code, joined.Code);
     }
 
     private static IConfiguration BuildConfig(int staleHours)
@@ -260,6 +329,9 @@ public class LobbyUseCaseTests
 
         public Task<LobbyEntity?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
             => Task.FromResult(_lobbies.FirstOrDefault(l => l.Id == id));
+
+        public Task<LobbyEntity?> GetByAccountIdAsync(Guid accountId, CancellationToken cancellationToken = default)
+            => Task.FromResult(_lobbies.FirstOrDefault(l => l.Members.Any(m => m.AccountId == accountId)));
 
         public Task SaveChangesAsync(CancellationToken cancellationToken = default)
             => Task.CompletedTask;

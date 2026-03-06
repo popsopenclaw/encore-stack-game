@@ -90,13 +90,10 @@ class LobbyController extends ChangeNotifier {
 
   ApiClient get _api => ApiClient(baseUrl: _backendUrl, jwt: _jwt);
 
-  Future<void> createLobby({required String name, required int max}) async {
+  Future<void> createLobby({required int max}) async {
     await _withStatus('Creating lobby', () async {
       await refreshSessionConfig();
-      final lobby = await _api.createLobby(
-        name: name,
-        maxPlayers: max.clamp(1, 6),
-      );
+      final lobby = await _api.createLobby(maxPlayers: max.clamp(1, 6));
       _bindLobby(lobby);
       if (lobbyCode != null) await _realtime.joinLobbyGroup(lobbyCode!);
       await refreshLobbies();

@@ -27,7 +27,7 @@ public class RealJwtAuthRegressionTests : IClassFixture<RawApiWebFactory>
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/lobby")
         {
-            Content = JsonContent.Create(new CreateLobbyRequest("My Lobby", 4))
+            Content = JsonContent.Create(new CreateLobbyRequest(4))
         };
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", CreateToken(Guid.NewGuid()));
 

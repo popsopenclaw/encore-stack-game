@@ -19,12 +19,13 @@ public class LobbyUseCase(
         if (request.MaxPlayers is < 1 or > 6) throw new InvalidOperationException("Max players must be 1..6");
         var account = await accountRepository.GetByIdAsync(accountId, cancellationToken)
             ?? throw new InvalidSessionException("Session is invalid.");
+        await LeaveCurrentLobbyIfNeededAsync(accountId, cancellationToken: cancellationToken);
         var code = GenerateCode();
 
         var lobby = new LobbyEntity
         {
             Code = code,
-            Name = request.Name.Trim(),
+            Name = DeriveLobbyName(account.PlayerName),
             HostAccountId = accountId,
             MaxPlayers = request.MaxPlayers,
             Members =
@@ -55,6 +56,8 @@ public class LobbyUseCase(
         if (lobby.Members.Count >= lobby.MaxPlayers)
             throw new InvalidOperationException("Lobby is full");
 
+        await LeaveCurrentLobbyIfNeededAsync(accountId, exceptLobbyId: lobby.Id, cancellationToken: cancellationToken);
+
         lobby.Members.Add(new LobbyMember
         {
             AccountId = accountId,
@@ -63,6 +66,17 @@ public class LobbyUseCase(
         });
 
         await repository.SaveChangesAsync(cancellationToken);
+        return await ToDtoAsync(lobby, cancellationToken);
+    }
+
+    public async Task<LobbyDto?> GetForAccountAsync(Guid accountId, CancellationToken cancellationToken = default)
+    {
+        var lobby = await repository.GetByAccountIdAsync(accountId, cancellationToken);
+        if (lobby is null) return null;
+
+        if (lobby.CreatedAt < StaleThreshold())
+            return null;
+
         return await ToDtoAsync(lobby, cancellationToken);
     }
 
@@ -94,9 +108,6 @@ public class LobbyUseCase(
 
         if (lobby.HostAccountId != accountId)
             throw new UnauthorizedAccessException("Only host can update lobby settings");
-
-        if (!string.IsNullOrWhiteSpace(request.Name))
-            lobby.Name = request.Name.Trim();
 
         if (request.MaxPlayers.HasValue)
         {
@@ -146,25 +157,7 @@ public class LobbyUseCase(
         var lobby = await repository.GetByCodeAsync(code.Trim().ToUpperInvariant(), cancellationToken)
                     ?? throw new KeyNotFoundException("Lobby not found");
 
-        var member = lobby.Members.FirstOrDefault(m => m.AccountId == accountId);
-        if (member is null) return;
-
-        var wasHost = lobby.HostAccountId == accountId;
-
-        repository.RemoveMember(member);
-
-        var remainingMembers = lobby.Members.Where(m => m.AccountId != accountId).OrderBy(m => m.JoinedAt).ToList();
-
-        if (remainingMembers.Count == 0)
-        {
-            repository.RemoveLobby(lobby);
-        }
-        else if (wasHost)
-        {
-            lobby.HostAccountId = remainingMembers[0].AccountId;
-        }
-
-        await repository.SaveChangesAsync(cancellationToken);
+        await RemoveMemberAsync(lobby, accountId, cancellationToken);
     }
 
     private async Task<LobbyDto> ToDtoAsync(LobbyEntity lobby, CancellationToken cancellationToken)
@@ -211,6 +204,49 @@ public class LobbyUseCase(
         var hours = configuration.GetValue<int?>("Lobby:StaleHours") ?? 24;
         if (hours < 1) hours = 1;
         return DateTimeOffset.UtcNow.AddHours(-hours);
+    }
+
+    private async Task LeaveCurrentLobbyIfNeededAsync(
+        Guid accountId,
+        Guid? exceptLobbyId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var currentLobby = await repository.GetByAccountIdAsync(accountId, cancellationToken);
+        if (currentLobby is null || (exceptLobbyId.HasValue && currentLobby.Id == exceptLobbyId.Value))
+            return;
+
+        await RemoveMemberAsync(currentLobby, accountId, cancellationToken);
+    }
+
+    private async Task RemoveMemberAsync(
+        LobbyEntity lobby,
+        Guid accountId,
+        CancellationToken cancellationToken)
+    {
+        var member = lobby.Members.FirstOrDefault(m => m.AccountId == accountId);
+        if (member is null) return;
+
+        var wasHost = lobby.HostAccountId == accountId;
+        repository.RemoveMember(member);
+        lobby.Members.RemoveAll(m => m.Id == member.Id);
+
+        if (lobby.Members.Count == 0)
+        {
+            repository.RemoveLobby(lobby);
+        }
+        else if (wasHost)
+        {
+            var nextHost = lobby.Members[Random.Shared.Next(lobby.Members.Count)];
+            lobby.HostAccountId = nextHost.AccountId;
+        }
+
+        await repository.SaveChangesAsync(cancellationToken);
+    }
+
+    private static string DeriveLobbyName(string? playerName)
+    {
+        var displayName = string.IsNullOrWhiteSpace(playerName) ? "Player" : playerName.Trim();
+        return $"{displayName}'s lobby";
     }
 
     private static string GenerateCode()

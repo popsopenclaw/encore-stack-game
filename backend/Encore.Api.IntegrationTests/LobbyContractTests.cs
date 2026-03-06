@@ -18,11 +18,12 @@ public class LobbyContractTests : IClassFixture<ApiWebFactory>
     [Fact]
     public async Task CreateJoinGetLeave_LobbyEndpoints_Work()
     {
-        var create = await _client.PostAsJsonAsync("/api/lobby", new CreateLobbyRequest("My Lobby", 4));
+        var create = await _client.PostAsJsonAsync("/api/lobby", new CreateLobbyRequest(4));
         create.EnsureSuccessStatusCode();
         var created = await create.Content.ReadFromJsonAsync<LobbyDto>();
         Assert.NotNull(created);
         Assert.False(string.IsNullOrWhiteSpace(created!.Code));
+        Assert.Equal("player-1's lobby", created.Name);
 
         var join = await _client.PostAsJsonAsync("/api/lobby/join", new JoinLobbyRequest(created.Code));
         join.EnsureSuccessStatusCode();
@@ -37,7 +38,7 @@ public class LobbyContractTests : IClassFixture<ApiWebFactory>
     [Fact]
     public async Task HostOnlyStartMatch_IsEnforced()
     {
-        var create = await _client.PostAsJsonAsync("/api/lobby", new CreateLobbyRequest("Game Lobby", 4));
+        var create = await _client.PostAsJsonAsync("/api/lobby", new CreateLobbyRequest(4));
         create.EnsureSuccessStatusCode();
         var created = await create.Content.ReadFromJsonAsync<LobbyDto>();
         Assert.NotNull(created);
@@ -68,5 +69,55 @@ public class LobbyContractTests : IClassFixture<ApiWebFactory>
         Assert.NotNull(err);
         Assert.Equal("forbidden", err!.Code);
         Assert.False(string.IsNullOrWhiteSpace(err.Message));
+    }
+
+    [Fact]
+    public async Task JoiningAnotherLobby_RemovesPlayerFromPreviousLobby()
+    {
+        using var createFirst = new HttpRequestMessage(HttpMethod.Post, "/api/lobby")
+        {
+            Content = JsonContent.Create(new CreateLobbyRequest(4))
+        };
+        createFirst.Headers.Add("X-Test-Sub", "11111111-1111-1111-1111-111111111111");
+
+        var firstResponse = await _client.SendAsync(createFirst);
+        firstResponse.EnsureSuccessStatusCode();
+        var firstLobby = await firstResponse.Content.ReadFromJsonAsync<LobbyDto>();
+        Assert.NotNull(firstLobby);
+
+        using var createSecond = new HttpRequestMessage(HttpMethod.Post, "/api/lobby")
+        {
+            Content = JsonContent.Create(new CreateLobbyRequest(4))
+        };
+        createSecond.Headers.Add("X-Test-Sub", "22222222-2222-2222-2222-222222222222");
+
+        var secondResponse = await _client.SendAsync(createSecond);
+        secondResponse.EnsureSuccessStatusCode();
+        var secondLobby = await secondResponse.Content.ReadFromJsonAsync<LobbyDto>();
+        Assert.NotNull(secondLobby);
+
+        using var joinSecond = new HttpRequestMessage(HttpMethod.Post, "/api/lobby/join")
+        {
+            Content = JsonContent.Create(new JoinLobbyRequest(secondLobby!.Code))
+        };
+        joinSecond.Headers.Add("X-Test-Sub", "11111111-1111-1111-1111-111111111111");
+
+        var joinResponse = await _client.SendAsync(joinSecond);
+        joinResponse.EnsureSuccessStatusCode();
+
+        using var getFirst = new HttpRequestMessage(HttpMethod.Get, $"/api/lobby/{firstLobby!.Code}");
+        getFirst.Headers.Add("X-Test-Sub", "11111111-1111-1111-1111-111111111111");
+
+        var firstLobbyGet = await _client.SendAsync(getFirst);
+        Assert.Equal(HttpStatusCode.NotFound, firstLobbyGet.StatusCode);
+
+        using var getSecond = new HttpRequestMessage(HttpMethod.Get, $"/api/lobby/{secondLobby.Code}");
+        getSecond.Headers.Add("X-Test-Sub", "11111111-1111-1111-1111-111111111111");
+
+        var secondLobbyGet = await _client.SendAsync(getSecond);
+        secondLobbyGet.EnsureSuccessStatusCode();
+        var secondLobbyState = await secondLobbyGet.Content.ReadFromJsonAsync<LobbyDto>();
+        Assert.NotNull(secondLobbyState);
+        Assert.Equal(2, secondLobbyState!.Members.Count);
     }
 }

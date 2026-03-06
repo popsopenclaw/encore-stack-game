@@ -19,6 +19,11 @@ public class LobbyRepositoryAdapter(AppDbContext db) : ILobbyRepository
     public Task<Lobby?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
         => db.Lobbies.Include(l => l.Members).FirstOrDefaultAsync(l => l.Id == id, cancellationToken);
 
+    public Task<Lobby?> GetByAccountIdAsync(Guid accountId, CancellationToken cancellationToken = default)
+        => db.Lobbies
+            .Include(l => l.Members)
+            .FirstOrDefaultAsync(l => l.Members.Any(m => m.AccountId == accountId), cancellationToken);
+
     public Task<List<Lobby>> ListOpenAsync(int limit = 20, CancellationToken cancellationToken = default)
         => db.Lobbies.Include(l => l.Members).OrderByDescending(l => l.CreatedAt).Take(limit).ToListAsync(cancellationToken);
 

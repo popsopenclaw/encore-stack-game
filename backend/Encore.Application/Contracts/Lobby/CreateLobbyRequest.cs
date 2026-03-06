@@ -1,3 +1,3 @@
 namespace Encore.Application.Contracts.Lobby;
 
-public record CreateLobbyRequest(string Name, int MaxPlayers);
+public record CreateLobbyRequest(int MaxPlayers);
