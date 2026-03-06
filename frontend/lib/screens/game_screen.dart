@@ -11,7 +11,6 @@ import '../widgets/board_sheet.dart';
 import '../widgets/common_card.dart';
 import '../widgets/game_audit_panel.dart';
 import '../widgets/match_hud_panel.dart';
-import '../widgets/ui_kit.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -187,37 +186,31 @@ class _GameScreenState extends State<GameScreen> {
                             ),
                           );
 
-                          final scorePanel = _ScorePreviewPanel(
-                            scores: controller.scores,
-                            status: controller.status,
-                            onOpenTimeline: _openAuditPanel,
-                          );
-
                           if (!wide) {
                             return ListView(
                               children: [
                                 boardPanel,
                                 const SizedBox(height: AppSpacing.sm),
-                                scorePanel,
-                                const SizedBox(height: AppSpacing.sm),
-                                MatchHudPanel(controller: controller),
+                                MatchHudPanel(
+                                  controller: controller,
+                                  onOpenTimeline: _openAuditPanel,
+                                ),
                               ],
                             );
                           }
 
-                          return Column(
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
+                              Expanded(flex: 10, child: boardPanel),
+                              const SizedBox(width: AppSpacing.sm),
                               Expanded(
-                                child: Row(
-                                  children: [
-                                    Expanded(flex: 10, child: boardPanel),
-                                    const SizedBox(width: AppSpacing.sm),
-                                    Expanded(flex: 4, child: scorePanel),
-                                  ],
+                                flex: 4,
+                                child: MatchHudPanel(
+                                  controller: controller,
+                                  onOpenTimeline: _openAuditPanel,
                                 ),
                               ),
-                              const SizedBox(height: AppSpacing.sm),
-                              MatchHudPanel(controller: controller),
                             ],
                           );
                         },
@@ -226,73 +219,6 @@ class _GameScreenState extends State<GameScreen> {
           ),
         );
       },
-    );
-  }
-}
-
-class _ScorePreviewPanel extends StatelessWidget {
-  const _ScorePreviewPanel({
-    required this.scores,
-    required this.status,
-    required this.onOpenTimeline,
-  });
-
-  final List<dynamic> scores;
-  final String status;
-  final VoidCallback onOpenTimeline;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppPanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Scores', style: AppTextStyles.title),
-          const SizedBox(height: AppSpacing.sm),
-          if (scores.isEmpty)
-            const Text(
-              'Scoreboard loads after opening timeline.',
-              style: AppTextStyles.bodyMuted,
-            )
-          else
-            ...scores.take(4).map((entry) {
-              final row = (entry as Map).map((k, v) => MapEntry('$k', v));
-              return Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppPalette.surfaceInset,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppPalette.borderLight),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(row['player']?.toString() ?? 'Player'),
-                      ),
-                      Text(
-                        '${row['total'] ?? '-'}',
-                        style: const TextStyle(fontWeight: FontWeight.w900),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          const Spacer(),
-          Text(status, style: AppTextStyles.bodyMuted),
-          const SizedBox(height: AppSpacing.sm),
-          FilledButton.icon(
-            onPressed: onOpenTimeline,
-            icon: const Icon(Icons.timeline),
-            label: const Text('Open Scores / Timeline'),
-          ),
-        ],
-      ),
     );
   }
 }

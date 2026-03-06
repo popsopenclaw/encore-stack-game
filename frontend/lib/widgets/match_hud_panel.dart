@@ -7,9 +7,14 @@ import '../theme/app_text_styles.dart';
 import 'ui_kit.dart';
 
 class MatchHudPanel extends StatelessWidget {
-  const MatchHudPanel({super.key, required this.controller});
+  const MatchHudPanel({
+    super.key,
+    required this.controller,
+    required this.onOpenTimeline,
+  });
 
   final GameController controller;
+  final VoidCallback onOpenTimeline;
 
   @override
   Widget build(BuildContext context) {
@@ -86,11 +91,6 @@ class MatchHudPanel extends StatelessWidget {
                 icon: const Icon(Icons.fast_forward, size: 16),
                 label: const Text('Pass'),
               ),
-              OutlinedButton.icon(
-                onPressed: controller.reloadState,
-                icon: const Icon(Icons.refresh, size: 16),
-                label: const Text('Refresh'),
-              ),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -113,6 +113,16 @@ class MatchHudPanel extends StatelessWidget {
                         ? controller.submitPlayerMove
                         : null,
                 child: const Text('Submit'),
+              ),
+              OutlinedButton.icon(
+                onPressed: controller.reloadState,
+                icon: const Icon(Icons.refresh, size: 16),
+                label: const Text('Refresh'),
+              ),
+              FilledButton.icon(
+                onPressed: onOpenTimeline,
+                icon: const Icon(Icons.timeline, size: 16),
+                label: const Text('Open Scores / Timeline'),
               ),
               if (controller.validationMessage != null)
                 Text(
