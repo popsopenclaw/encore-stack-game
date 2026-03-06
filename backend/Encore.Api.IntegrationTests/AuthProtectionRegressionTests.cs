@@ -31,7 +31,7 @@ public class AuthProtectionRegressionTests : IClassFixture<RawApiWebFactory>
     [Fact]
     public async Task PublicAuthUrlEndpoint_WithoutToken_IsAccessible()
     {
-        var res = await _client.GetAsync("/api/auth/github/url?state=x");
+        var res = await _client.GetAsync("/api/auth/providers");
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
     }
 }

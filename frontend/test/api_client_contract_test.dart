@@ -7,25 +7,28 @@ import 'package:http/testing.dart';
 
 void main() {
   group('ApiClient contract parsing', () {
-    test('parses auth url payload', () async {
+    test('parses auth providers payload', () async {
       final mock = MockClient((request) async {
-        expect(request.url.path, '/api/auth/github/url');
+        expect(request.url.path, '/api/auth/providers');
         return http.Response(
           jsonEncode({
-            'url': 'https://github.com/login/oauth/authorize?client_id=x',
+            'providers': [
+              {'id': 'github', 'label': 'GitHub', 'kind': 'oauth'},
+              {'id': 'local', 'label': 'Email', 'kind': 'credentials'},
+            ],
           }),
           200,
         );
       });
 
       final api = ApiClient(baseUrl: 'http://localhost:8080', httpClient: mock);
-      final result = await api.getGitHubLoginUrl();
-      expect(result['url'], contains('github.com/login/oauth/authorize'));
+      final result = await api.getAuthProviders();
+      expect((result['providers'] as List).length, 2);
     });
 
-    test('parses auth exchange player name field', () async {
+    test('parses oauth exchange player name field', () async {
       final mock = MockClient((request) async {
-        expect(request.url.path, '/api/auth/github/exchange');
+        expect(request.url.path, '/api/auth/oauth/github/exchange');
         return http.Response(
           jsonEncode({
             'accessToken': 'jwt',
@@ -39,9 +42,36 @@ void main() {
       });
 
       final api = ApiClient(baseUrl: 'http://localhost:8080', httpClient: mock);
-      final result = await api.exchangeGitHubCode('code');
+      final result = await api.exchangeOAuthCode('github', 'code');
 
       expect(result['playerName'], 'ember-falcon-42');
+    });
+
+    test('posts local auth payload', () async {
+      final mock = MockClient((request) async {
+        expect(request.url.path, '/api/auth/local/login');
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(body['email'], 'tester@example.com');
+        expect(body['password'], 'secret123');
+        return http.Response(
+          jsonEncode({
+            'accessToken': 'jwt',
+            'username': 'tester',
+            'email': 'tester@example.com',
+            'avatarUrl': '',
+            'playerName': 'ember-falcon-42',
+          }),
+          200,
+        );
+      });
+
+      final api = ApiClient(baseUrl: 'http://localhost:8080', httpClient: mock);
+      final result = await api.loginLocal(
+        email: 'tester@example.com',
+        password: 'secret123',
+      );
+
+      expect(result['email'], 'tester@example.com');
     });
 
     test('sends create lobby request without display name fields', () async {
@@ -166,7 +196,7 @@ void main() {
         );
 
         expect(
-          () => api.getGitHubLoginUrl(),
+          () => api.getAuthProviders(),
           throwsA(
             isA<ApiErrorException>()
                 .having((e) => e.statusCode, 'statusCode', 403)

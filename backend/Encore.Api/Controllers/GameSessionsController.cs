@@ -1,7 +1,7 @@
-using System.IdentityModel.Tokens.Jwt;
 using Encore.Infrastructure.Services;
 using Encore.Application.Contracts.Game;
 using Encore.Api.Middleware;
+using Encore.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,7 +15,7 @@ public class GameSessionsController(GameSessionService gameSessionService) : Con
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateSessionRequest request)
     {
-        var accountId = GetAccountId();
+        var accountId = User.GetRequiredAccountId();
         var session = await gameSessionService.CreateAsync(accountId, request.Name, request.InitialStateJson);
         return Ok(session);
     }
@@ -36,12 +36,5 @@ public class GameSessionsController(GameSessionService gameSessionService) : Con
         return updated is null
             ? NotFound(ApiErrorFactory.Create("not_found", "Game session not found", HttpContext))
             : Ok(updated);
-    }
-
-    private Guid GetAccountId()
-    {
-        var sub = User.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value
-                  ?? throw new UnauthorizedAccessException("Missing sub claim.");
-        return Guid.Parse(sub);
     }
 }

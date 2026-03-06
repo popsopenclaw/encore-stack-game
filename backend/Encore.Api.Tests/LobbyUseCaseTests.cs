@@ -1,4 +1,5 @@
 using Encore.Application.Abstractions;
+using Encore.Application;
 using Encore.Application.Contracts.Lobby;
 using Encore.Application.Lobby;
 using Encore.Domain;
@@ -178,6 +179,32 @@ public class LobbyUseCaseTests
 
         Assert.Equal("ember-rook-12", joined.HostDisplayName);
         Assert.Contains(joined.Members, m => m.DisplayName == "tidal-otter-31");
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithMissingAccount_ThrowsInvalidSession()
+    {
+        var repo = new FakeLobbyRepository();
+        var accounts = new FakeAccountRepository();
+        var useCase = CreateUseCase(repo, accounts, staleHours: 24);
+
+        await Assert.ThrowsAsync<InvalidSessionException>(() =>
+            useCase.CreateAsync(Guid.NewGuid(), new CreateLobbyRequest("L", 4)));
+    }
+
+    [Fact]
+    public async Task JoinAsync_WithMissingAccount_ThrowsInvalidSession()
+    {
+        var repo = new FakeLobbyRepository();
+        var accounts = new FakeAccountRepository();
+        var useCase = CreateUseCase(repo, accounts, staleHours: 24);
+
+        var hostId = Guid.NewGuid();
+        accounts.Add(hostId, "Host");
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4));
+
+        await Assert.ThrowsAsync<InvalidSessionException>(() =>
+            useCase.JoinAsync(Guid.NewGuid(), new JoinLobbyRequest(created.Code)));
     }
 
     private static IConfiguration BuildConfig(int staleHours)

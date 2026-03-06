@@ -160,7 +160,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       runSpacing: AppSpacing.xs,
                       children: const [
                         AppMetaPill(text: 'Saved Identity', emphasis: true),
-                        AppMetaPill(text: 'GitHub Linked'),
+                        AppMetaPill(text: 'Provider Ready'),
                         AppMetaPill(text: 'Lobby Ready'),
                       ],
                     ),
@@ -233,10 +233,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('GitHub Account', style: AppTextStyles.subtitle),
+                    const Text(
+                      'Connected Account',
+                      style: AppTextStyles.subtitle,
+                    ),
                     const SizedBox(height: AppSpacing.md),
                     _ProfileRow(
-                      label: 'GitHub username',
+                      label: 'Username',
                       value: profile?['username']?.toString() ?? 'Loading...',
                     ),
                     const SizedBox(height: AppSpacing.sm),

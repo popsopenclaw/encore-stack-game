@@ -1,4 +1,5 @@
 using Encore.Application.Abstractions;
+using Encore.Application;
 using Encore.Application.Contracts.Profile;
 using Encore.Application.Profile;
 using Encore.Domain.Models;
@@ -41,6 +42,16 @@ public class ProfileUseCaseTests
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             useCase.UpdateAsync(accountId, new UpdateProfileRequest("bad name")));
+    }
+
+    [Fact]
+    public async Task GetAsync_WithMissingAccount_ThrowsInvalidSession()
+    {
+        var repo = new FakeAccountRepository(Guid.NewGuid(), "ember-falcon-42");
+        var useCase = new ProfileUseCase(repo);
+
+        await Assert.ThrowsAsync<InvalidSessionException>(() =>
+            useCase.GetAsync(Guid.NewGuid()));
     }
 
     private class FakeAccountRepository : IAccountRepository

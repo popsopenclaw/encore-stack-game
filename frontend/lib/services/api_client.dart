@@ -53,16 +53,50 @@ class ApiClient {
     if (jwt != null && jwt!.isNotEmpty) 'Authorization': 'Bearer $jwt',
   };
 
-  Future<Map<String, dynamic>> getGitHubLoginUrl() async {
-    final r = await _http.get(_u('/api/auth/github/url?state=encore-app'));
+  Future<Map<String, dynamic>> getAuthProviders() async {
+    final r = await _http.get(_u('/api/auth/providers'));
     return _decodeMap(r);
   }
 
-  Future<Map<String, dynamic>> exchangeGitHubCode(String code) async {
+  Future<Map<String, dynamic>> getOAuthLoginUrl(String provider) async {
+    final r = await _http.get(
+      _u('/api/auth/oauth/$provider/url?state=encore-app'),
+    );
+    return _decodeMap(r);
+  }
+
+  Future<Map<String, dynamic>> exchangeOAuthCode(
+    String provider,
+    String code,
+  ) async {
     final r = await _http.post(
-      _u('/api/auth/github/exchange'),
+      _u('/api/auth/oauth/$provider/exchange'),
       headers: _jsonHeaders,
       body: jsonEncode({'code': code}),
+    );
+    return _decodeMap(r);
+  }
+
+  Future<Map<String, dynamic>> loginLocal({
+    required String email,
+    required String password,
+  }) async {
+    final r = await _http.post(
+      _u('/api/auth/local/login'),
+      headers: _jsonHeaders,
+      body: jsonEncode({'email': email, 'password': password}),
+    );
+    return _decodeMap(r);
+  }
+
+  Future<Map<String, dynamic>> registerLocal({
+    required String email,
+    required String password,
+  }) async {
+    final r = await _http.post(
+      _u('/api/auth/local/register'),
+      headers: _jsonHeaders,
+      body: jsonEncode({'email': email, 'password': password}),
     );
     return _decodeMap(r);
   }

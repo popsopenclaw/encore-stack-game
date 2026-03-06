@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using Encore.Application;
 using Encore.Application.Contracts.Lobby;
 using Encore.Application.Lobby;
 using Encore.Api.Middleware;
@@ -18,10 +19,14 @@ public class LobbyController(ILobbyUseCase lobbyUseCase, LobbyRealtimeNotifier n
     {
         try
         {
-            var accountId = GetAccountId();
+            var accountId = User.GetRequiredAccountId();
             var lobby = await lobbyUseCase.CreateAsync(accountId, request);
             await notifier.LobbyUpdatedAsync(lobby);
             return Ok(EnrichForViewer(lobby, accountId));
+        }
+        catch (InvalidSessionException ex)
+        {
+            return Unauthorized(ApiErrorFactory.Create("invalid_session", ex.Message, HttpContext));
         }
         catch (Exception ex)
         {
@@ -34,10 +39,14 @@ public class LobbyController(ILobbyUseCase lobbyUseCase, LobbyRealtimeNotifier n
     {
         try
         {
-            var accountId = GetAccountId();
+            var accountId = User.GetRequiredAccountId();
             var lobby = await lobbyUseCase.JoinAsync(accountId, request);
             await notifier.LobbyUpdatedAsync(lobby);
             return Ok(EnrichForViewer(lobby, accountId));
+        }
+        catch (InvalidSessionException ex)
+        {
+            return Unauthorized(ApiErrorFactory.Create("invalid_session", ex.Message, HttpContext));
         }
         catch (KeyNotFoundException ex)
         {
@@ -52,7 +61,7 @@ public class LobbyController(ILobbyUseCase lobbyUseCase, LobbyRealtimeNotifier n
     [HttpGet("{code}")]
     public async Task<IActionResult> Get(string code)
     {
-        var accountId = GetAccountId();
+        var accountId = User.GetRequiredAccountId();
         var lobby = await lobbyUseCase.GetAsync(code);
         return lobby is null
             ? NotFound(ApiErrorFactory.Create("not_found", "Lobby not found", HttpContext))
@@ -62,7 +71,7 @@ public class LobbyController(ILobbyUseCase lobbyUseCase, LobbyRealtimeNotifier n
     [HttpGet]
     public async Task<IActionResult> List([FromQuery] int limit = 20)
     {
-        var accountId = GetAccountId();
+        var accountId = User.GetRequiredAccountId();
         var lobbies = await lobbyUseCase.ListAsync(limit);
         return Ok(lobbies.Select(l => EnrichForViewer(l, accountId)).ToList());
     }
@@ -72,10 +81,14 @@ public class LobbyController(ILobbyUseCase lobbyUseCase, LobbyRealtimeNotifier n
     {
         try
         {
-            var accountId = GetAccountId();
+            var accountId = User.GetRequiredAccountId();
             var lobby = await lobbyUseCase.UpdateAsync(accountId, code, request);
             await notifier.LobbyUpdatedAsync(lobby);
             return Ok(EnrichForViewer(lobby, accountId));
+        }
+        catch (InvalidSessionException ex)
+        {
+            return Unauthorized(ApiErrorFactory.Create("invalid_session", ex.Message, HttpContext));
         }
         catch (KeyNotFoundException ex)
         {
@@ -96,10 +109,14 @@ public class LobbyController(ILobbyUseCase lobbyUseCase, LobbyRealtimeNotifier n
     {
         try
         {
-            var sessionId = await lobbyUseCase.StartMatchAsync(GetAccountId(), code, request);
+            var sessionId = await lobbyUseCase.StartMatchAsync(User.GetRequiredAccountId(), code, request);
             var lobby = await lobbyUseCase.GetAsync(code);
             if (lobby is not null) await notifier.LobbyUpdatedAsync(lobby);
             return Ok(new { sessionId });
+        }
+        catch (InvalidSessionException ex)
+        {
+            return Unauthorized(ApiErrorFactory.Create("invalid_session", ex.Message, HttpContext));
         }
         catch (KeyNotFoundException ex)
         {
@@ -118,7 +135,7 @@ public class LobbyController(ILobbyUseCase lobbyUseCase, LobbyRealtimeNotifier n
     [HttpPost("{code}/leave")]
     public async Task<IActionResult> Leave(string code)
     {
-        await lobbyUseCase.LeaveAsync(GetAccountId(), code);
+        await lobbyUseCase.LeaveAsync(User.GetRequiredAccountId(), code);
         var lobby = await lobbyUseCase.GetAsync(code);
         if (lobby is not null) await notifier.LobbyUpdatedAsync(lobby);
         return NoContent();
@@ -139,10 +156,4 @@ public class LobbyController(ILobbyUseCase lobbyUseCase, LobbyRealtimeNotifier n
             isHostForCurrentUser = lobby.HostAccountId == viewerAccountId
         };
 
-    private Guid GetAccountId()
-    {
-        var sub = User.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value;
-        if (Guid.TryParse(sub, out var id)) return id;
-        return Guid.Parse("11111111-1111-1111-1111-111111111111");
-    }
 }

@@ -9,6 +9,7 @@ import '../screens/lobby_room_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/session_gate_screen.dart';
+import '../widgets/authenticated_route.dart';
 
 class AppRoutes {
   static const gate = '/';
@@ -26,12 +27,16 @@ class AppRouter {
   static Map<String, WidgetBuilder> get routes => {
     AppRoutes.gate: (_) => const SessionGateScreen(),
     AppRoutes.login: (_) => const LoginScreen(),
-    AppRoutes.home: (_) => const HomeScreen(),
-    AppRoutes.createLobby: (_) => const CreateLobbyScreen(),
-    AppRoutes.joinLobby: (_) => const JoinLobbyScreen(),
-    AppRoutes.lobbyRoom: (_) => const LobbyRoomScreen(),
-    AppRoutes.game: (_) => const GameScreen(),
-    AppRoutes.settings: (_) => const SettingsScreen(),
-    AppRoutes.profile: (_) => const ProfileScreen(),
+    AppRoutes.home: (_) => const AuthenticatedRoute(child: HomeScreen()),
+    AppRoutes.createLobby:
+        (_) => const AuthenticatedRoute(child: CreateLobbyScreen()),
+    AppRoutes.joinLobby:
+        (_) => const AuthenticatedRoute(child: JoinLobbyScreen()),
+    AppRoutes.lobbyRoom:
+        (_) => const AuthenticatedRoute(child: LobbyRoomScreen()),
+    AppRoutes.game: (_) => const AuthenticatedRoute(child: GameScreen()),
+    AppRoutes.settings:
+        (_) => const AuthenticatedRoute(child: SettingsScreen()),
+    AppRoutes.profile: (_) => const AuthenticatedRoute(child: ProfileScreen()),
   };
 }

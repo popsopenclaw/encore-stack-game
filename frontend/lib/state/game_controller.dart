@@ -83,13 +83,16 @@ class GameController extends ChangeNotifier {
 
   Future<void> githubLoginUrl(Future<void> Function(String url) openUrl) async {
     await _run('OAuth URL', () async {
-      final body = await client.getGitHubLoginUrl();
+      final body = await client.getOAuthLoginUrl('github');
       await openUrl(body['url'] as String);
     });
   }
 
   Future<void> exchange() async => _run('OAuth exchange', () async {
-    final body = await client.exchangeGitHubCode(oauthCode.text.trim());
+    final body = await client.exchangeOAuthCode(
+      'github',
+      oauthCode.text.trim(),
+    );
     jwt = body['accessToken'] as String;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(kJwtPrefKey, jwt!);

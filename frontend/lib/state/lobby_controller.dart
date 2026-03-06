@@ -222,9 +222,8 @@ class LobbyController extends ChangeNotifier {
       await op();
       status = '$label done';
     } on UnauthorizedApiException {
+      await resetForLogout();
       await authSessionController.logout();
-      await _realtime.disconnect();
-      realtimeStatus = RealtimeStatus.disconnected;
       status = 'Session expired. Please login again.';
     } on ApiErrorException catch (e) {
       status = '$label failed: ${_messageForApiError(e)}';

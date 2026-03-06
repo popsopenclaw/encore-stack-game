@@ -15,21 +15,21 @@ public class FrontendBackendContractTests : IClassFixture<ApiWebFactory>
     }
 
     [Fact]
-    public async Task AuthUrl_Contract_WorksForFrontendClient()
+    public async Task AuthProviders_Contract_WorksForFrontendClient()
     {
-        var response = await _client.GetAsync("/api/auth/github/url?state=test");
+        var response = await _client.GetAsync("/api/auth/providers");
         response.EnsureSuccessStatusCode();
 
-        var payload = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+        var payload = await response.Content.ReadFromJsonAsync<AuthProvidersResponse>();
         Assert.NotNull(payload);
-        Assert.True(payload!.ContainsKey("url"));
-        Assert.StartsWith("https://github.com/login/oauth/authorize", payload["url"]);
+        Assert.Contains(payload!.Providers, provider => provider.Id == "github");
+        Assert.Contains(payload.Providers, provider => provider.Id == "local");
     }
 
     [Fact]
-    public async Task AuthExchange_Contract_ReturnsFrontendFields()
+    public async Task OAuthExchange_Contract_ReturnsFrontendFields()
     {
-        var response = await _client.PostAsJsonAsync("/api/auth/github/exchange", new GithubExchangeRequest("abc"));
+        var response = await _client.PostAsJsonAsync("/api/auth/oauth/github/exchange", new OAuthExchangeRequest("abc"));
         response.EnsureSuccessStatusCode();
 
         var auth = await response.Content.ReadFromJsonAsync<AuthResponse>();
@@ -37,6 +37,17 @@ public class FrontendBackendContractTests : IClassFixture<ApiWebFactory>
         Assert.Equal("fake-jwt", auth!.AccessToken);
         Assert.False(string.IsNullOrWhiteSpace(auth.Username));
         Assert.False(string.IsNullOrWhiteSpace(auth.PlayerName));
+    }
+
+    [Fact]
+    public async Task LocalLogin_Contract_ReturnsFrontendFields()
+    {
+        var response = await _client.PostAsJsonAsync("/api/auth/local/login", new LocalAuthRequest("tester@example.com", "secret123"));
+        response.EnsureSuccessStatusCode();
+
+        var auth = await response.Content.ReadFromJsonAsync<AuthResponse>();
+        Assert.NotNull(auth);
+        Assert.Equal("tester@example.com", auth!.Email);
     }
 
     [Fact]

@@ -34,7 +34,9 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
 
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<JwtTokenService>();
-builder.Services.AddScoped<GitHubOAuthService>();
+builder.Services.AddScoped<IOAuthProviderService, GitHubOAuthService>();
+builder.Services.AddScoped<PasswordHasherService>();
+builder.Services.AddScoped<AuthAccountService>();
 builder.Services.AddSingleton<IPlayerNameGenerator, RandomPlayerNameGenerator>();
 builder.Services.AddSingleton<BoardTemplateProvider>();
 builder.Services.AddScoped<GameSessionService>();
@@ -64,6 +66,7 @@ var audience = builder.Configuration["Jwt:Audience"] ?? "encore-clients";
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,

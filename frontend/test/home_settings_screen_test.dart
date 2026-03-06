@@ -1,9 +1,12 @@
 import 'package:encore_frontend/app/router.dart';
+import 'package:encore_frontend/config/backend_config.dart';
 import 'package:encore_frontend/screens/create_lobby_screen.dart';
 import 'package:encore_frontend/screens/home_screen.dart';
 import 'package:encore_frontend/screens/join_lobby_screen.dart';
+import 'package:encore_frontend/screens/login_screen.dart';
 import 'package:encore_frontend/screens/settings_screen.dart';
 import 'package:encore_frontend/services/lobby_realtime_service.dart';
+import 'package:encore_frontend/state/auth_session_controller.dart';
 import 'package:encore_frontend/state/lobby_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,6 +17,7 @@ void main() {
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+    authSessionController.resetForTest();
     lobbyController.lobbyCode = null;
     lobbyController.lobbyName = '';
     lobbyController.activeSessionId = null;
@@ -95,5 +99,37 @@ void main() {
     await tester.pump();
     expect(find.text('Display name'), findsNothing);
     expect(find.textContaining('saved player name'), findsOneWidget);
+  });
+
+  testWidgets('router redirects unauthenticated create-lobby route to login', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({kJwtPrefKey: 'stale.jwt.token'});
+    authSessionController.setSessionValidator((jwt, backendUrl) async => false);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        routes: AppRouter.routes,
+        initialRoute: AppRoutes.createLobby,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LoginScreen), findsOneWidget);
+    expect(find.text('Create Lobby'), findsNothing);
+  });
+
+  testWidgets('router redirects unauthenticated join-lobby route to login', (
+    tester,
+  ) async {
+    authSessionController.setSessionValidator((jwt, backendUrl) async => false);
+
+    await tester.pumpWidget(
+      MaterialApp(routes: AppRouter.routes, initialRoute: AppRoutes.joinLobby),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LoginScreen), findsOneWidget);
+    expect(find.text('Join Lobby'), findsNothing);
   });
 }

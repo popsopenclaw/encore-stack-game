@@ -5,13 +5,30 @@ namespace Encore.Application.Auth;
 
 public class AuthUseCase(IAuthGateway authGateway, ITokenIssuer tokenIssuer) : IAuthUseCase
 {
-    public string BuildGitHubLoginUrl(string? state = null)
-        => authGateway.BuildAuthorizeUrl(state);
+    public AuthProvidersResponse GetProviders()
+        => new(authGateway.GetProviders());
 
-    public async Task<AuthResponse> ExchangeGitHubCodeAsync(string code, CancellationToken cancellationToken)
+    public string BuildOAuthLoginUrl(string provider, string? state = null)
+        => authGateway.BuildAuthorizeUrl(provider, state);
+
+    public async Task<AuthResponse> ExchangeOAuthCodeAsync(string provider, string code, CancellationToken cancellationToken)
     {
-        var account = await authGateway.ExchangeCodeAndUpsertAsync(code, cancellationToken);
-        var token = tokenIssuer.CreateToken(account);
-        return new AuthResponse(token, account.Username, account.Email, account.AvatarUrl, account.PlayerName);
+        var account = await authGateway.ExchangeCodeAsync(provider, code, cancellationToken);
+        return ToResponse(account);
     }
+
+    public async Task<AuthResponse> LoginLocalAsync(string email, string password, CancellationToken cancellationToken)
+        => ToResponse(await authGateway.LoginLocalAsync(email, password, cancellationToken));
+
+    public async Task<AuthResponse> RegisterLocalAsync(string email, string password, CancellationToken cancellationToken)
+        => ToResponse(await authGateway.RegisterLocalAsync(email, password, cancellationToken));
+
+    public Task LinkOAuthAsync(Guid accountId, string provider, string code, CancellationToken cancellationToken)
+        => authGateway.LinkOAuthAsync(accountId, provider, code, cancellationToken);
+
+    public Task LinkLocalAsync(Guid accountId, string email, string password, CancellationToken cancellationToken)
+        => authGateway.LinkLocalAsync(accountId, email, password, cancellationToken);
+
+    private AuthResponse ToResponse(Encore.Domain.Models.Account account)
+        => new(tokenIssuer.CreateToken(account), account.Username, account.Email, account.AvatarUrl, account.PlayerName);
 }

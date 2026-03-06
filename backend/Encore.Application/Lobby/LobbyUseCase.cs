@@ -17,7 +17,7 @@ public class LobbyUseCase(
     {
         if (request.MaxPlayers is < 1 or > 6) throw new InvalidOperationException("Max players must be 1..6");
         var account = await accountRepository.GetByIdAsync(accountId, cancellationToken)
-            ?? throw new KeyNotFoundException("Account not found");
+            ?? throw new InvalidSessionException("Session is invalid.");
         var code = GenerateCode();
 
         var lobby = new LobbyEntity
@@ -46,7 +46,7 @@ public class LobbyUseCase(
         var lobby = await repository.GetByCodeAsync(request.Code.Trim().ToUpperInvariant(), cancellationToken)
                     ?? throw new KeyNotFoundException("Lobby not found");
         var account = await accountRepository.GetByIdAsync(accountId, cancellationToken)
-            ?? throw new KeyNotFoundException("Account not found");
+            ?? throw new InvalidSessionException("Session is invalid.");
 
         if (lobby.Members.Any(m => m.AccountId == accountId))
             return await ToDtoAsync(lobby, cancellationToken);

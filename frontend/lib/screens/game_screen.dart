@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../app/router.dart';
 import '../services/api_client.dart';
-import '../state/auth_session_controller.dart';
 import '../state/game_controller.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
@@ -119,20 +118,8 @@ class _GameScreenState extends State<GameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (authSessionController.initialized &&
-        !authSessionController.hasSession) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!context.mounted) return;
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          AppRoutes.login,
-          (_) => false,
-        );
-      });
-    }
-
     return AnimatedBuilder(
-      animation: Listenable.merge([controller, authSessionController]),
+      animation: controller,
       builder: (context, _) {
         final board =
             (controller.state?['board'] as List<dynamic>?)

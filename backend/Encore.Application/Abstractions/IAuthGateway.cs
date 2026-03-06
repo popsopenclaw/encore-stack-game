@@ -4,6 +4,11 @@ namespace Encore.Application.Abstractions;
 
 public interface IAuthGateway
 {
-    string BuildAuthorizeUrl(string? state);
-    Task<Account> ExchangeCodeAndUpsertAsync(string code, CancellationToken cancellationToken);
+    IReadOnlyList<Contracts.Auth.AuthProviderDto> GetProviders();
+    string BuildAuthorizeUrl(string provider, string? state);
+    Task<Account> ExchangeCodeAsync(string provider, string code, CancellationToken cancellationToken);
+    Task<Account> LoginLocalAsync(string email, string password, CancellationToken cancellationToken);
+    Task<Account> RegisterLocalAsync(string email, string password, CancellationToken cancellationToken);
+    Task LinkOAuthAsync(Guid accountId, string provider, string code, CancellationToken cancellationToken);
+    Task LinkLocalAsync(Guid accountId, string email, string password, CancellationToken cancellationToken);
 }

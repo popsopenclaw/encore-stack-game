@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Encore.Application;
 using StackExchange.Redis;
 
 namespace Encore.Api.Middleware;
@@ -23,6 +24,7 @@ public class ExceptionHandlingMiddleware(RequestDelegate next)
 
     private static (int status, string code, string message) Map(Exception ex) => ex switch
     {
+        InvalidSessionException => (StatusCodes.Status401Unauthorized, "invalid_session", ex.Message),
         KeyNotFoundException => (StatusCodes.Status404NotFound, "not_found", ex.Message),
         UnauthorizedAccessException => (StatusCodes.Status403Forbidden, "forbidden", ex.Message),
         InvalidOperationException => (StatusCodes.Status400BadRequest, "invalid_operation", ex.Message),

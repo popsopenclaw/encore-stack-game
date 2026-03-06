@@ -8,7 +8,7 @@ public class ProfileUseCase(IAccountRepository repository) : IProfileUseCase
     public async Task<ProfileDto> GetAsync(Guid accountId, CancellationToken cancellationToken = default)
     {
         var account = await repository.GetByIdAsync(accountId, cancellationToken)
-            ?? throw new KeyNotFoundException("Account not found");
+            ?? throw new InvalidSessionException("Session is invalid.");
 
         return ToDto(account);
     }
@@ -16,7 +16,7 @@ public class ProfileUseCase(IAccountRepository repository) : IProfileUseCase
     public async Task<ProfileDto> UpdateAsync(Guid accountId, UpdateProfileRequest request, CancellationToken cancellationToken = default)
     {
         var account = await repository.GetByIdAsync(accountId, cancellationToken)
-            ?? throw new KeyNotFoundException("Account not found");
+            ?? throw new InvalidSessionException("Session is invalid.");
 
         var playerName = PlayerNamePolicy.Validate(request.PlayerName);
         var normalized = PlayerNamePolicy.Normalize(playerName);

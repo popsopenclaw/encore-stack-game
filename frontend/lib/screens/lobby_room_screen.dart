@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../app/router.dart';
 import '../services/api_client.dart';
+import '../state/auth_session_controller.dart';
 import '../state/lobby_controller.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
@@ -77,6 +78,11 @@ class _LobbyRoomScreenState extends State<LobbyRoomScreen> {
         AppRoutes.game,
         arguments: sessionId,
       );
+    } on UnauthorizedApiException {
+      await lobbyController.resetForLogout();
+      await authSessionController.logout();
+      if (!mounted) return;
+      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (_) => false);
     } on ApiErrorException catch (e) {
       setState(() => _error = e.message);
     } catch (e) {

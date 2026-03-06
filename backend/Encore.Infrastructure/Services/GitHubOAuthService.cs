@@ -1,20 +1,16 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
-using Encore.Application.Abstractions;
-using Encore.Application.Profile;
-using Encore.Infrastructure.Data;
-using Encore.Domain.Models;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
 namespace Encore.Infrastructure.Services;
 
 public class GitHubOAuthService(
     IHttpClientFactory httpClientFactory,
-    IConfiguration configuration,
-    AppDbContext dbContext,
-    IPlayerNameGenerator playerNameGenerator)
+    IConfiguration configuration) : IOAuthProviderService
 {
+    public string Id => "github";
+    public string Label => "GitHub";
+
     public string BuildAuthorizeUrl(string? state)
     {
         var clientId = configuration["GitHubOAuth:ClientId"] ?? throw new InvalidOperationException("Missing GitHub OAuth client id");
@@ -28,7 +24,7 @@ public class GitHubOAuthService(
         return $"{baseUrl}&redirect_uri={Uri.EscapeDataString(redirectUri)}";
     }
 
-    public async Task<Account> ExchangeCodeAndUpsertAsync(string code, CancellationToken cancellationToken)
+    public async Task<OAuthProviderIdentity> ExchangeCodeAsync(string code, CancellationToken cancellationToken)
     {
         var clientId = configuration["GitHubOAuth:ClientId"] ?? throw new InvalidOperationException("Missing GitHubOAuth:ClientId");
         var clientSecret = configuration["GitHubOAuth:ClientSecret"] ?? throw new InvalidOperationException("Missing GitHubOAuth:ClientSecret");
@@ -61,52 +57,46 @@ public class GitHubOAuthService(
         userRes.EnsureSuccessStatusCode();
 
         var userJson = JsonDocument.Parse(await userRes.Content.ReadAsStringAsync(cancellationToken));
-        var githubId = userJson.RootElement.GetProperty("id").GetInt64();
-        var username = userJson.RootElement.GetProperty("login").GetString() ?? "unknown";
+        var githubId = userJson.RootElement.GetProperty("id").GetInt64().ToString();
         var avatarUrl = userJson.RootElement.GetProperty("avatar_url").GetString() ?? string.Empty;
-
         var email = userJson.RootElement.TryGetProperty("email", out var emailEl) ? emailEl.GetString() : null;
+        if (string.IsNullOrWhiteSpace(email))
+            email = await FetchPrimaryEmailAsync(http, accessToken, cancellationToken);
 
-        var account = await dbContext.Accounts.FirstOrDefaultAsync(a => a.GitHubId == githubId, cancellationToken);
-        if (account is null)
-        {
-            var playerName = await GenerateUniquePlayerNameAsync(cancellationToken);
-            account = new Account
-            {
-                GitHubId = githubId,
-                Username = username,
-                PlayerName = playerName,
-                NormalizedPlayerName = PlayerNamePolicy.Normalize(playerName),
-                Email = email,
-                AvatarUrl = avatarUrl
-            };
-            dbContext.Accounts.Add(account);
-        }
-        else
-        {
-            account.Username = username;
-            account.Email = email;
-            account.AvatarUrl = avatarUrl;
-            account.UpdatedAt = DateTimeOffset.UtcNow;
-        }
-
-        await dbContext.SaveChangesAsync(cancellationToken);
-        return account;
+        return new OAuthProviderIdentity(Id, githubId, email, avatarUrl);
     }
 
-    private async Task<string> GenerateUniquePlayerNameAsync(CancellationToken cancellationToken)
+    private static async Task<string?> FetchPrimaryEmailAsync(HttpClient http, string accessToken, CancellationToken cancellationToken)
     {
-        for (var attempt = 0; attempt < 32; attempt++)
+        using var emailReq = new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/user/emails");
+        emailReq.Headers.UserAgent.Add(new ProductInfoHeaderValue("EncoreApi", "1.0"));
+        emailReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+        using var emailRes = await http.SendAsync(emailReq, cancellationToken);
+        emailRes.EnsureSuccessStatusCode();
+
+        var emailJson = JsonDocument.Parse(await emailRes.Content.ReadAsStringAsync(cancellationToken));
+        foreach (var item in emailJson.RootElement.EnumerateArray())
         {
-            var candidate = playerNameGenerator.GenerateCandidate();
-            var normalized = PlayerNamePolicy.Normalize(candidate);
-            var exists = await dbContext.Accounts.AnyAsync(
-                a => a.NormalizedPlayerName == normalized,
-                cancellationToken);
-            if (!exists)
-                return candidate;
+            var isPrimary = item.TryGetProperty("primary", out var primaryEl) && primaryEl.GetBoolean();
+            var isVerified = item.TryGetProperty("verified", out var verifiedEl) && verifiedEl.GetBoolean();
+            if (!isPrimary || !isVerified)
+                continue;
+
+            if (item.TryGetProperty("email", out var emailEl))
+                return emailEl.GetString();
         }
 
-        throw new InvalidOperationException("Could not generate a unique player name.");
+        foreach (var item in emailJson.RootElement.EnumerateArray())
+        {
+            var isVerified = item.TryGetProperty("verified", out var verifiedEl) && verifiedEl.GetBoolean();
+            if (!isVerified)
+                continue;
+
+            if (item.TryGetProperty("email", out var emailEl))
+                return emailEl.GetString();
+        }
+
+        return null;
     }
 }

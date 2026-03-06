@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../app/router.dart';
-import '../state/auth_session_controller.dart';
 import '../state/lobby_controller.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
@@ -47,18 +46,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (authSessionController.initialized &&
-        !authSessionController.hasSession) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!context.mounted) return;
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          AppRoutes.login,
-          (_) => false,
-        );
-      });
-    }
-
     return AppShell(
       title: 'Home',
       actions: [
@@ -72,7 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ],
       child: AnimatedBuilder(
-        animation: Listenable.merge([lobbyController, authSessionController]),
+        animation: lobbyController,
         builder: (context, _) {
           final hasLobby = lobbyController.lobbyCode != null;
           final lobbyLabel =

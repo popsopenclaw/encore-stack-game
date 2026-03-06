@@ -4,5 +4,5 @@ public record ProfileDto(
     Guid Id,
     string PlayerName,
     string Username,
-    string? Email,
+    string Email,
     string AvatarUrl);
