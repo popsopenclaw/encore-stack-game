@@ -5,6 +5,7 @@ using Encore.Application.Abstractions;
 using Encore.Application.Auth;
 using Encore.Application.Gameplay;
 using Encore.Application.Lobby;
+using Encore.Application.Profile;
 using Encore.Infrastructure.Adapters;
 using Encore.Api.Hubs;
 using Encore.Api.Middleware;
@@ -34,6 +35,7 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<GitHubOAuthService>();
+builder.Services.AddSingleton<IPlayerNameGenerator, RandomPlayerNameGenerator>();
 builder.Services.AddSingleton<BoardTemplateProvider>();
 builder.Services.AddScoped<GameSessionService>();
 builder.Services.AddScoped<IGameStateStore, GameSessionService>();
@@ -41,6 +43,7 @@ builder.Services.AddScoped<EncoreRulesEngine>();
 
 // Application ports/adapters
 builder.Services.AddScoped<IAuthGateway, AuthGatewayAdapter>();
+builder.Services.AddScoped<IAccountRepository, AccountRepositoryAdapter>();
 builder.Services.AddScoped<ITokenIssuer, TokenIssuerAdapter>();
 builder.Services.AddScoped<IGameplayRepository, GameplayRepositoryAdapter>();
 builder.Services.AddScoped<ILobbyRepository, LobbyRepositoryAdapter>();
@@ -50,6 +53,7 @@ builder.Services.AddScoped<IGameRules, GameRulesAdapter>();
 builder.Services.AddScoped<IAuthUseCase, AuthUseCase>();
 builder.Services.AddScoped<IGameplayUseCase, GameplayUseCase>();
 builder.Services.AddScoped<ILobbyUseCase, LobbyUseCase>();
+builder.Services.AddScoped<IProfileUseCase, ProfileUseCase>();
 builder.Services.AddScoped<LobbyRealtimeNotifier>();
 builder.Services.AddHostedService<LobbyCleanupHostedService>();
 

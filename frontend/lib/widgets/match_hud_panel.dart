@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../state/die_face_codec.dart';
 import '../state/game_controller.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
@@ -8,19 +7,12 @@ import '../theme/app_text_styles.dart';
 import 'ui_kit.dart';
 
 class MatchHudPanel extends StatelessWidget {
-  const MatchHudPanel({
-    super.key,
-    required this.controller,
-    required this.onShowAudit,
-  });
+  const MatchHudPanel({super.key, required this.controller});
 
   final GameController controller;
-  final VoidCallback onShowAudit;
 
   @override
   Widget build(BuildContext context) {
-    final currentRoll =
-        controller.state?['currentRoll'] as Map<String, dynamic>?;
     final resolverIdx = controller.currentResolvingPlayerIndex;
     final resolver = controller.currentResolvingPlayer;
     final resolverName =
@@ -29,23 +21,10 @@ class MatchHudPanel extends StatelessWidget {
     final inActiveSelection = controller.phase == 'NeedActiveSelection';
     final inPlayersResolving = controller.phase == 'PlayersResolving';
     final canPickDice = inActiveSelection || inPlayersResolving;
-    final colorDice = DieFaceCodec.colorFaces(currentRoll?['colorDice']);
-    final numberDice = DieFaceCodec.numberFaces(currentRoll?['numberDice']);
+    final colorDice = controller.availableColorDice;
+    final numberDice = controller.availableNumberDice;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppPalette.boardFrame,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppPalette.borderDark),
-        boxShadow: const [
-          BoxShadow(
-            color: AppPalette.boardFrameShadow,
-            blurRadius: 10,
-            offset: Offset(0, 5),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(AppSpacing.sm),
+    return AppPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -54,61 +33,43 @@ class MatchHudPanel extends StatelessWidget {
             runSpacing: AppSpacing.xs,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              const Text(
-                'Controls',
-                style: TextStyle(
-                  color: AppPalette.textOnDark,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
+              const Text('Controls', style: AppTextStyles.subtitle),
               _darkPill('Phase ${_prettyEnum(controller.phase)}'),
-              if (controller.sessionId != null)
-                _darkPill('Session ${controller.sessionId!.substring(0, 8)}'),
               _darkPill('Resolver $resolverName'),
-              _darkPill('Open draft ${controller.openDraftTurnsRemaining}'),
-              _darkPill('! ${controller.currentResolvingPlayerJokers}'),
-              if (controller.endTriggered) _darkPill('End triggered'),
-              if (controller.isFinished) _darkPill('Finished'),
-              OutlinedButton.icon(
-                onPressed: () async {
-                  await controller.loadScoreAndEvents();
-                  onShowAudit();
-                },
-                icon: const Icon(Icons.timeline, size: 16),
-                label: const Text('Scores / Timeline'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppPalette.textOnDark,
-                  side: const BorderSide(color: AppPalette.borderLight),
-                ),
-              ),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.xs,
-            runSpacing: AppSpacing.xs,
-            children: [
-              ...colorDice.map(
-                (d) => DieChip(
-                  text: d,
-                  bg: AppPalette.fromGameColor(d),
-                  fg: AppPalette.textPrimary,
+          if (colorDice.isEmpty && numberDice.isEmpty)
+            const Text('Roll to reveal dice', style: AppTextStyles.bodyMuted)
+          else
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _DiceGroup(
+                  label: 'Color',
+                  keyPrefix: 'color-die',
+                  options: colorDice,
+                  selected: controller.selectedColorDie,
+                  onSelect: controller.setSelectedColorDie,
+                  enabled: canPickDice,
+                  textFor: (d) => d,
+                  bgFor: AppPalette.fromGameColor,
+                  fgFor: (_) => AppPalette.black,
                 ),
-              ),
-              ...numberDice.map(
-                (d) => DieChip(
-                  text: _prettyEnum(d),
-                  bg: AppPalette.white,
-                  fg: AppPalette.textPrimary,
+                const SizedBox(height: AppSpacing.xs),
+                _DiceGroup(
+                  label: 'Number',
+                  keyPrefix: 'number-die',
+                  options: numberDice,
+                  selected: controller.selectedNumberDie,
+                  onSelect: controller.setSelectedNumberDie,
+                  enabled: canPickDice,
+                  textFor: _prettyEnum,
+                  bgFor: (_) => AppPalette.surfaceRaised,
+                  fgFor: (_) => AppPalette.textPrimary,
                 ),
-              ),
-              if (colorDice.isEmpty && numberDice.isEmpty)
-                const Text(
-                  'Roll to reveal dice',
-                  style: TextStyle(color: AppPalette.textOnDark),
-                ),
-            ],
-          ),
+              ],
+            ),
           const SizedBox(height: AppSpacing.sm),
           Wrap(
             spacing: AppSpacing.xs,
@@ -129,57 +90,6 @@ class MatchHudPanel extends StatelessWidget {
                 onPressed: controller.reloadState,
                 icon: const Icon(Icons.refresh, size: 16),
                 label: const Text('Refresh'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppPalette.textOnDark,
-                  side: const BorderSide(color: AppPalette.borderLight),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            children: [
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  initialValue: controller.selectedColorDie,
-                  dropdownColor: AppPalette.surfaceRaised,
-                  style: AppTextStyles.body,
-                  decoration: const InputDecoration(
-                    labelText: 'Color',
-                    isDense: true,
-                  ),
-                  items:
-                      controller.availableColorDice
-                          .map(
-                            (d) => DropdownMenuItem(value: d, child: Text(d)),
-                          )
-                          .toList(),
-                  onChanged:
-                      canPickDice ? controller.setSelectedColorDie : null,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  initialValue: controller.selectedNumberDie,
-                  dropdownColor: AppPalette.surfaceRaised,
-                  style: AppTextStyles.body,
-                  decoration: const InputDecoration(
-                    labelText: 'Number',
-                    isDense: true,
-                  ),
-                  items:
-                      controller.availableNumberDice
-                          .map(
-                            (d) => DropdownMenuItem(
-                              value: d,
-                              child: Text(_prettyEnum(d)),
-                            ),
-                          )
-                          .toList(),
-                  onChanged:
-                      canPickDice ? controller.setSelectedNumberDie : null,
-                ),
               ),
             ],
           ),
@@ -213,41 +123,38 @@ class MatchHudPanel extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-              Text(
-                controller.status,
-                style: const TextStyle(
-                  color: AppPalette.textOnDark,
-                  fontSize: 12,
-                ),
-              ),
+              Text(controller.status, style: AppTextStyles.bodyMuted),
             ],
           ),
           const SizedBox(height: AppSpacing.xs),
           const Text(
             'Solo mode rules are not supported in this build.',
-            style: TextStyle(color: AppPalette.textOnDark, fontSize: 11),
+            style: AppTextStyles.bodyMuted,
           ),
         ],
       ),
     );
   }
 
-  Widget _darkPill(String text) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-    decoration: BoxDecoration(
-      color: AppPalette.stripBg,
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: AppPalette.borderDark),
-    ),
-    child: Text(
-      text,
-      style: const TextStyle(
-        color: AppPalette.textOnDark,
-        fontSize: 12,
-        fontWeight: FontWeight.w700,
+  Widget _darkPill(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppPalette.surfaceInset,
+        borderRadius: BorderRadius.circular(99),
+        border: Border.all(color: AppPalette.borderLight),
       ),
-    ),
-  );
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: AppPalette.textOnDark,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.25,
+        ),
+      ),
+    );
+  }
 
   static String _prettyEnum(String raw) {
     final s = raw.replaceAllMapped(
@@ -256,5 +163,59 @@ class MatchHudPanel extends StatelessWidget {
     );
     if (s.isEmpty) return raw;
     return s[0].toUpperCase() + s.substring(1);
+  }
+}
+
+class _DiceGroup extends StatelessWidget {
+  const _DiceGroup({
+    required this.label,
+    required this.keyPrefix,
+    required this.options,
+    required this.selected,
+    required this.onSelect,
+    required this.enabled,
+    required this.textFor,
+    required this.bgFor,
+    required this.fgFor,
+  });
+
+  final String label;
+  final String keyPrefix;
+  final List<String> options;
+  final String? selected;
+  final ValueChanged<String?> onSelect;
+  final bool enabled;
+  final String Function(String value) textFor;
+  final Color Function(String value) bgFor;
+  final Color Function(String value) fgFor;
+
+  @override
+  Widget build(BuildContext context) {
+    if (options.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: AppTextStyles.bodyMuted),
+        const SizedBox(height: AppSpacing.xs),
+        Wrap(
+          spacing: AppSpacing.xs,
+          runSpacing: AppSpacing.xs,
+          children:
+              options
+                  .map(
+                    (d) => DieChip(
+                      key: ValueKey('$keyPrefix-$d'),
+                      text: textFor(d),
+                      bg: bgFor(d),
+                      fg: fgFor(d),
+                      selected: selected == d,
+                      enabled: enabled,
+                      onTap: () => onSelect(d),
+                    ),
+                  )
+                  .toList(),
+        ),
+      ],
+    );
   }
 }

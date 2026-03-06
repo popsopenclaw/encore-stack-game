@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using Encore.Application.Contracts.Auth;
+using Encore.Application.Contracts.Profile;
 using Encore.Domain;
 
 namespace Encore.Api.IntegrationTests;
@@ -35,6 +36,30 @@ public class FrontendBackendContractTests : IClassFixture<ApiWebFactory>
         Assert.NotNull(auth);
         Assert.Equal("fake-jwt", auth!.AccessToken);
         Assert.False(string.IsNullOrWhiteSpace(auth.Username));
+        Assert.False(string.IsNullOrWhiteSpace(auth.PlayerName));
+    }
+
+    [Fact]
+    public async Task Profile_Contract_ReturnsEditablePlayerFields()
+    {
+        var response = await _client.GetAsync("/api/profile");
+        response.EnsureSuccessStatusCode();
+
+        var profile = await response.Content.ReadFromJsonAsync<ProfileDto>();
+        Assert.NotNull(profile);
+        Assert.False(string.IsNullOrWhiteSpace(profile!.PlayerName));
+        Assert.False(string.IsNullOrWhiteSpace(profile.Username));
+    }
+
+    [Fact]
+    public async Task ProfileUpdate_Contract_ReturnsUpdatedPlayerName()
+    {
+        var response = await _client.PatchAsJsonAsync("/api/profile", new UpdateProfileRequest("tidal-rook-8"));
+        response.EnsureSuccessStatusCode();
+
+        var profile = await response.Content.ReadFromJsonAsync<ProfileDto>();
+        Assert.NotNull(profile);
+        Assert.Equal("tidal-rook-8", profile!.PlayerName);
     }
 
     [Fact]

@@ -12,6 +12,7 @@ import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/common_card.dart';
+import '../widgets/ui_kit.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -105,65 +106,163 @@ class _LoginScreenState extends State<LoginScreen> {
     return AppShell(
       title: 'Login',
       child: Center(
-        child: SizedBox(
-          width: 560,
-          child: CommonCard(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Icon(Icons.lock_outline, size: 38),
-                const SizedBox(height: AppSpacing.sm),
-                const Text(
-                  'Login with GitHub OAuth to continue',
-                  style: AppTextStyles.subtitle,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                FilledButton.icon(
-                  onPressed: _busy ? null : _startOAuth,
-                  icon: const Icon(Icons.open_in_browser),
-                  label: const Text('Start GitHub OAuth'),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                TextField(
-                  controller: _codeController,
-                  decoration: const InputDecoration(
-                    labelText: 'OAuth code',
-                    hintText: 'Paste code from callback URL',
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                FilledButton.icon(
-                  onPressed: _busy ? null : _exchangeCode,
-                  icon: const Icon(Icons.login),
-                  label: const Text('Complete Login'),
-                ),
-                if (_lastAuthUrl != null) ...[
-                  const SizedBox(height: AppSpacing.md),
-                  SelectableText(_lastAuthUrl!),
-                  TextButton.icon(
-                    onPressed: () async {
-                      await Clipboard.setData(
-                        ClipboardData(text: _lastAuthUrl!),
-                      );
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Auth URL copied')),
-                      );
-                    },
-                    icon: const Icon(Icons.copy),
-                    label: const Text('Copy auth URL'),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1060),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 860;
+              if (compact) {
+                return ListView(
+                  shrinkWrap: true,
+                  children: [
+                    _HeroPanel(status: _status),
+                    const SizedBox(height: AppSpacing.md),
+                    _AuthPanel(
+                      busy: _busy,
+                      status: _status,
+                      codeController: _codeController,
+                      lastAuthUrl: _lastAuthUrl,
+                      onStartOAuth: _startOAuth,
+                      onExchangeCode: _exchangeCode,
+                    ),
+                  ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 11, child: _HeroPanel(status: _status)),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    flex: 12,
+                    child: _AuthPanel(
+                      busy: _busy,
+                      status: _status,
+                      codeController: _codeController,
+                      lastAuthUrl: _lastAuthUrl,
+                      onStartOAuth: _startOAuth,
+                      onExchangeCode: _exchangeCode,
+                    ),
                   ),
                 ],
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  _status,
-                  style: const TextStyle(color: AppPalette.textMuted),
-                ),
-              ],
-            ),
+              );
+            },
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _HeroPanel extends StatelessWidget {
+  const _HeroPanel({required this.status});
+
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    return CommonCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Encore Control Deck', style: AppTextStyles.title),
+          const SizedBox(height: AppSpacing.xs),
+          const Text(
+            'Authenticate with GitHub and enter the multiplayer relay.',
+            style: AppTextStyles.bodyMuted,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.xs,
+            children: const [
+              AppMetaPill(text: 'OAuth 2.0', emphasis: true),
+              AppMetaPill(text: 'JWT Session'),
+              AppMetaPill(text: 'SignalR Ready'),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: AppPalette.surfaceInset,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppPalette.borderLight),
+            ),
+            child: Text(status, style: AppTextStyles.body),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AuthPanel extends StatelessWidget {
+  const _AuthPanel({
+    required this.busy,
+    required this.status,
+    required this.codeController,
+    required this.lastAuthUrl,
+    required this.onStartOAuth,
+    required this.onExchangeCode,
+  });
+
+  final bool busy;
+  final String status;
+  final TextEditingController codeController;
+  final String? lastAuthUrl;
+  final Future<void> Function() onStartOAuth;
+  final Future<void> Function() onExchangeCode;
+
+  @override
+  Widget build(BuildContext context) {
+    return CommonCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text('GitHub Sign-In', style: AppTextStyles.title),
+          const SizedBox(height: AppSpacing.md),
+          FilledButton.icon(
+            onPressed: busy ? null : onStartOAuth,
+            icon: const Icon(Icons.rocket_launch),
+            label: const Text('Start GitHub OAuth'),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          TextField(
+            controller: codeController,
+            decoration: const InputDecoration(
+              labelText: 'OAuth code',
+              hintText: 'Paste code from callback URL',
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          FilledButton.icon(
+            onPressed: busy ? null : onExchangeCode,
+            icon: const Icon(Icons.login),
+            label: const Text('Complete Login'),
+          ),
+          if (lastAuthUrl != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            SelectableText(lastAuthUrl!, style: AppTextStyles.bodyMuted),
+            const SizedBox(height: AppSpacing.xs),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: lastAuthUrl!));
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Auth URL copied')),
+                  );
+                },
+                icon: const Icon(Icons.copy),
+                label: const Text('Copy auth URL'),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

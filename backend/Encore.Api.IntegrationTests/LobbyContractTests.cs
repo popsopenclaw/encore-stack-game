@@ -18,13 +18,13 @@ public class LobbyContractTests : IClassFixture<ApiWebFactory>
     [Fact]
     public async Task CreateJoinGetLeave_LobbyEndpoints_Work()
     {
-        var create = await _client.PostAsJsonAsync("/api/lobby", new CreateLobbyRequest("My Lobby", 4, "Host"));
+        var create = await _client.PostAsJsonAsync("/api/lobby", new CreateLobbyRequest("My Lobby", 4));
         create.EnsureSuccessStatusCode();
         var created = await create.Content.ReadFromJsonAsync<LobbyDto>();
         Assert.NotNull(created);
         Assert.False(string.IsNullOrWhiteSpace(created!.Code));
 
-        var join = await _client.PostAsJsonAsync("/api/lobby/join", new JoinLobbyRequest(created.Code, "Player2"));
+        var join = await _client.PostAsJsonAsync("/api/lobby/join", new JoinLobbyRequest(created.Code));
         join.EnsureSuccessStatusCode();
 
         var get = await _client.GetAsync($"/api/lobby/{created.Code}");
@@ -37,13 +37,23 @@ public class LobbyContractTests : IClassFixture<ApiWebFactory>
     [Fact]
     public async Task HostOnlyStartMatch_IsEnforced()
     {
-        var create = await _client.PostAsJsonAsync("/api/lobby", new CreateLobbyRequest("Game Lobby", 4, "Host"));
+        var create = await _client.PostAsJsonAsync("/api/lobby", new CreateLobbyRequest("Game Lobby", 4));
         create.EnsureSuccessStatusCode();
         var created = await create.Content.ReadFromJsonAsync<LobbyDto>();
         Assert.NotNull(created);
 
         var startHost = await _client.PostAsJsonAsync($"/api/lobby/{created!.Code}/start", new StartLobbyMatchRequest("Game"));
         startHost.EnsureSuccessStatusCode();
+        var started = await startHost.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+        Assert.NotNull(started);
+        Assert.True(started!.ContainsKey("sessionId"));
+
+        var get = await _client.GetAsync($"/api/lobby/{created.Code}");
+        get.EnsureSuccessStatusCode();
+        var startedLobby = await get.Content.ReadFromJsonAsync<LobbyDto>();
+        Assert.NotNull(startedLobby);
+        Assert.True(startedLobby!.HasActiveGame);
+        Assert.Equal(started["sessionId"], startedLobby.ActiveSessionId);
 
         using var nonHostReq = new HttpRequestMessage(HttpMethod.Post, $"/api/lobby/{created.Code}/start")
         {

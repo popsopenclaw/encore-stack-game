@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
+import '../theme/app_text_styles.dart';
 import 'ui_kit.dart';
 
 class MenuTileButton extends StatelessWidget {
@@ -25,25 +26,48 @@ class MenuTileButton extends StatelessWidget {
         horizontal: AppSpacing.md,
         vertical: AppSpacing.sm,
       ),
-      child: ListTile(
-        dense: true,
-        leading: Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: AppPalette.surfaceRaised,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppPalette.borderLight),
-          ),
-          child: Icon(icon, size: 19),
-        ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
-        subtitle: Text(
-          subtitle,
-          style: const TextStyle(color: AppPalette.textMuted),
-        ),
-        trailing: const Icon(Icons.chevron_right),
+      child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppPalette.neonBlue.withValues(alpha: 0.45),
+                    AppPalette.surfaceInset,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(11),
+                border: Border.all(color: AppPalette.borderLight),
+              ),
+              child: Icon(icon, size: 21, color: AppPalette.textOnDark),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppTextStyles.subtitle.copyWith(fontSize: 15),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: AppTextStyles.bodyMuted),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            const Icon(
+              Icons.chevron_right,
+              color: AppPalette.neonCyan,
+              size: 22,
+            ),
+          ],
+        ),
       ),
     );
   }

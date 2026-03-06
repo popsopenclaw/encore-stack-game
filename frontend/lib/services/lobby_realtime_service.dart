@@ -4,12 +4,7 @@ import 'package:signalr_netcore/json_hub_protocol.dart';
 import 'package:signalr_netcore/http_connection_options.dart';
 import 'package:signalr_netcore/hub_connection_builder.dart';
 
-enum RealtimeStatus {
-  disconnected,
-  connecting,
-  connected,
-  reconnecting,
-}
+enum RealtimeStatus { disconnected, connecting, connected, reconnecting }
 
 class LobbyRealtimeService {
   HubConnection? _conn;
@@ -28,16 +23,19 @@ class LobbyRealtimeService {
 
     onStatusChanged?.call(RealtimeStatus.connecting);
 
-    _conn = HubConnectionBuilder()
-        .withUrl(
-          hubUrl,
-          options: HttpConnectionOptions(
-            accessTokenFactory: () async => jwt ?? '',
-          ),
-        )
-        .withHubProtocol(protocol as IHubProtocol)
-        .withAutomaticReconnect(retryDelays: [0, 1000, 2000, 4000, 8000, 16000])
-        .build();
+    _conn =
+        HubConnectionBuilder()
+            .withUrl(
+              hubUrl,
+              options: HttpConnectionOptions(
+                accessTokenFactory: () async => jwt ?? '',
+              ),
+            )
+            .withHubProtocol(protocol as IHubProtocol)
+            .withAutomaticReconnect(
+              retryDelays: [0, 1000, 2000, 4000, 8000, 16000],
+            )
+            .build();
 
     _conn!.onclose(({error}) {
       onStatusChanged?.call(RealtimeStatus.disconnected);

@@ -6,13 +6,13 @@ import 'app_tokens.dart';
 class AppTheme {
   static ThemeData get light {
     const scheme = ColorScheme(
-      brightness: Brightness.light,
+      brightness: Brightness.dark,
       primary: AppPalette.inkAccent,
-      onPrimary: AppPalette.white,
-      secondary: AppPalette.tileBlue,
-      onSecondary: AppPalette.textPrimary,
+      onPrimary: AppPalette.black,
+      secondary: AppPalette.neonPink,
+      onSecondary: AppPalette.black,
       error: AppPalette.danger,
-      onError: AppPalette.white,
+      onError: AppPalette.black,
       surface: AppPalette.cardBg,
       onSurface: AppPalette.textPrimary,
     );
@@ -26,9 +26,9 @@ class AppTheme {
       scaffoldBackgroundColor: AppPalette.scaffoldBg,
       fontFamily: 'Trebuchet MS',
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppPalette.appBarBg,
+        backgroundColor: Colors.transparent,
         foregroundColor: AppPalette.textOnDark,
-        elevation: 1,
+        elevation: 0,
         centerTitle: false,
       ),
       cardTheme: CardThemeData(
@@ -45,12 +45,13 @@ class AppTheme {
         filled: true,
         fillColor: AppPalette.surfaceRaised,
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 10,
-          vertical: 10,
+          horizontal: 12,
+          vertical: 12,
         ),
+        hintStyle: const TextStyle(color: AppPalette.textMuted),
         labelStyle: const TextStyle(
           color: AppPalette.textMuted,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radius.control),
@@ -58,69 +59,88 @@ class AppTheme {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radius.control),
-          borderSide: const BorderSide(color: AppPalette.borderLight),
+          borderSide: const BorderSide(color: AppPalette.borderDark),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radius.control),
-          borderSide: const BorderSide(color: AppPalette.inkAccent, width: 1.6),
+          borderSide: const BorderSide(color: AppPalette.inkAccent, width: 1.8),
         ),
       ),
       tabBarTheme: const TabBarThemeData(
-        labelColor: AppPalette.inkAccent,
+        labelColor: AppPalette.textOnDark,
         unselectedLabelColor: AppPalette.textMuted,
         indicatorColor: AppPalette.inkAccent,
-        dividerColor: AppPalette.borderLight,
+        dividerColor: Colors.transparent,
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size(0, 36),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          minimumSize: const Size(0, 40),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radius.control),
           ),
           backgroundColor: AppPalette.inkAccent,
-          foregroundColor: AppPalette.white,
-          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+          foregroundColor: AppPalette.black,
+          textStyle: const TextStyle(
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.35,
+            fontSize: 13,
+          ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size(0, 36),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          minimumSize: const Size(0, 40),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radius.control),
           ),
-          side: const BorderSide(color: AppPalette.borderDark),
+          side: const BorderSide(color: AppPalette.borderLight),
           foregroundColor: AppPalette.textPrimary,
-          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+          textStyle: const TextStyle(
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.3,
+            fontSize: 13,
+          ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           minimumSize: const Size(0, 34),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radius.control),
           ),
           foregroundColor: AppPalette.inkAccent,
-          textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+          textStyle: const TextStyle(
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.3,
+            fontSize: 13,
+          ),
         ),
       ),
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
-          backgroundColor: AppPalette.surfaceRaised,
-          foregroundColor: AppPalette.textPrimary,
-          minimumSize: const Size(36, 36),
+          backgroundColor: AppPalette.surfaceInset,
+          foregroundColor: AppPalette.textOnDark,
+          minimumSize: const Size(38, 38),
           side: const BorderSide(color: AppPalette.borderLight),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radius.control),
           ),
         ),
       ),
-      snackBarTheme: const SnackBarThemeData(
+      snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: AppPalette.boardFrame,
-        contentTextStyle: TextStyle(color: AppPalette.textOnDark),
+        backgroundColor: AppPalette.panelCore,
+        contentTextStyle: const TextStyle(
+          color: AppPalette.textOnDark,
+          fontWeight: FontWeight.w600,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radius.control),
+          side: const BorderSide(color: AppPalette.borderLight),
+        ),
       ),
       extensions: const [radius, surface],
     );

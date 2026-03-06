@@ -14,13 +14,16 @@ public class LobbyUseCaseTests
     public async Task HostLeaves_TransfersHostToOldestRemainingMember()
     {
         var repo = new FakeLobbyRepository();
-        var useCase = CreateUseCase(repo, staleHours: 24);
+        var accounts = new FakeAccountRepository();
+        var useCase = CreateUseCase(repo, accounts, staleHours: 24);
 
         var hostId = Guid.NewGuid();
         var otherId = Guid.NewGuid();
+        accounts.Add(hostId, "Host");
+        accounts.Add(otherId, "P2");
 
-        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4, "Host"));
-        await useCase.JoinAsync(otherId, new JoinLobbyRequest(created.Code, "P2"));
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4));
+        await useCase.JoinAsync(otherId, new JoinLobbyRequest(created.Code));
 
         await useCase.LeaveAsync(hostId, created.Code);
 
@@ -33,10 +36,12 @@ public class LobbyUseCaseTests
     public async Task LastMemberLeaves_RemovesLobby()
     {
         var repo = new FakeLobbyRepository();
-        var useCase = CreateUseCase(repo, staleHours: 24);
+        var accounts = new FakeAccountRepository();
+        var useCase = CreateUseCase(repo, accounts, staleHours: 24);
 
         var hostId = Guid.NewGuid();
-        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4, "Host"));
+        accounts.Add(hostId, "Host");
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4));
 
         await useCase.LeaveAsync(hostId, created.Code);
 
@@ -48,13 +53,16 @@ public class LobbyUseCaseTests
     public async Task NonHostCannotUpdateLobby()
     {
         var repo = new FakeLobbyRepository();
-        var useCase = CreateUseCase(repo, staleHours: 24);
+        var accounts = new FakeAccountRepository();
+        var useCase = CreateUseCase(repo, accounts, staleHours: 24);
 
         var hostId = Guid.NewGuid();
         var userId = Guid.NewGuid();
+        accounts.Add(hostId, "Host");
+        accounts.Add(userId, "User");
 
-        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4, "Host"));
-        await useCase.JoinAsync(userId, new JoinLobbyRequest(created.Code, "User"));
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4));
+        await useCase.JoinAsync(userId, new JoinLobbyRequest(created.Code));
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             useCase.UpdateAsync(userId, created.Code, new UpdateLobbyRequest("Nope", 4)));
@@ -64,10 +72,12 @@ public class LobbyUseCaseTests
     public async Task HostCanUpdateLobbySettings()
     {
         var repo = new FakeLobbyRepository();
-        var useCase = CreateUseCase(repo, staleHours: 24);
+        var accounts = new FakeAccountRepository();
+        var useCase = CreateUseCase(repo, accounts, staleHours: 24);
 
         var hostId = Guid.NewGuid();
-        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4, "Host"));
+        accounts.Add(hostId, "Host");
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4));
 
         var updated = await useCase.UpdateAsync(hostId, created.Code, new UpdateLobbyRequest("Renamed", 5));
 
@@ -75,17 +85,17 @@ public class LobbyUseCaseTests
         Assert.Equal(5, updated.MaxPlayers);
     }
 
-
     [Fact]
     public async Task StaleLobbiesAreNotListed_AndRemainForAsyncCleanup()
     {
         var repo = new FakeLobbyRepository();
-        var useCase = CreateUseCase(repo, staleHours: 1);
+        var accounts = new FakeAccountRepository();
+        var useCase = CreateUseCase(repo, accounts, staleHours: 1);
 
         var hostId = Guid.NewGuid();
-        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4, "Host"));
+        accounts.Add(hostId, "Host");
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4));
 
-        // force stale
         var lobby = await repo.GetByCodeAsync(created.Code);
         lobby!.CreatedAt = DateTimeOffset.UtcNow.AddHours(-2);
 
@@ -96,24 +106,20 @@ public class LobbyUseCaseTests
         Assert.NotNull(stillThere);
     }
 
-    private static IConfiguration BuildConfig(int staleHours)
-        => new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
-        {
-            ["Lobby:StaleHours"] = staleHours.ToString()
-        }).Build();
-
-
     [Fact]
     public async Task NonHostCannotStartMatch()
     {
         var repo = new FakeLobbyRepository();
-        var useCase = CreateUseCase(repo, staleHours: 24);
+        var accounts = new FakeAccountRepository();
+        var useCase = CreateUseCase(repo, accounts, staleHours: 24);
 
         var hostId = Guid.NewGuid();
         var userId = Guid.NewGuid();
+        accounts.Add(hostId, "Host");
+        accounts.Add(userId, "User");
 
-        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4, "Host"));
-        await useCase.JoinAsync(userId, new JoinLobbyRequest(created.Code, "User"));
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4));
+        await useCase.JoinAsync(userId, new JoinLobbyRequest(created.Code));
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             useCase.StartMatchAsync(userId, created.Code, new StartLobbyMatchRequest("Game")));
@@ -123,17 +129,65 @@ public class LobbyUseCaseTests
     public async Task HostCanStartMatch()
     {
         var repo = new FakeLobbyRepository();
-        var useCase = CreateUseCase(repo, staleHours: 24);
+        var accounts = new FakeAccountRepository();
+        var useCase = CreateUseCase(repo, accounts, staleHours: 24);
 
         var hostId = Guid.NewGuid();
-        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4, "Host"));
+        accounts.Add(hostId, "Host");
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4));
 
         var sessionId = await useCase.StartMatchAsync(hostId, created.Code, new StartLobbyMatchRequest("Game"));
         Assert.False(string.IsNullOrWhiteSpace(sessionId));
+
+        var lobby = await repo.GetByCodeAsync(created.Code);
+        Assert.NotNull(lobby);
+        Assert.Equal(sessionId, lobby!.ActiveSessionId);
     }
 
-    private static LobbyUseCase CreateUseCase(FakeLobbyRepository repo, int staleHours)
-        => new(repo, BuildConfig(staleHours), new FakeGameplayRepository(), new FakeGameRules());
+    [Fact]
+    public async Task StartingStartedLobby_ReturnsExistingSession()
+    {
+        var repo = new FakeLobbyRepository();
+        var accounts = new FakeAccountRepository();
+        var useCase = CreateUseCase(repo, accounts, staleHours: 24);
+
+        var hostId = Guid.NewGuid();
+        accounts.Add(hostId, "Host");
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4));
+
+        var firstSessionId = await useCase.StartMatchAsync(hostId, created.Code, new StartLobbyMatchRequest("Game"));
+        var secondSessionId = await useCase.StartMatchAsync(hostId, created.Code, new StartLobbyMatchRequest("Game"));
+
+        Assert.Equal(firstSessionId, secondSessionId);
+    }
+
+    [Fact]
+    public async Task LobbyDto_UsesPersistedPlayerNames()
+    {
+        var repo = new FakeLobbyRepository();
+        var accounts = new FakeAccountRepository();
+        var useCase = CreateUseCase(repo, accounts, staleHours: 24);
+
+        var hostId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        accounts.Add(hostId, "ember-rook-12");
+        accounts.Add(userId, "tidal-otter-31");
+
+        var created = await useCase.CreateAsync(hostId, new CreateLobbyRequest("L", 4));
+        var joined = await useCase.JoinAsync(userId, new JoinLobbyRequest(created.Code));
+
+        Assert.Equal("ember-rook-12", joined.HostDisplayName);
+        Assert.Contains(joined.Members, m => m.DisplayName == "tidal-otter-31");
+    }
+
+    private static IConfiguration BuildConfig(int staleHours)
+        => new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Lobby:StaleHours"] = staleHours.ToString()
+        }).Build();
+
+    private static LobbyUseCase CreateUseCase(FakeLobbyRepository repo, FakeAccountRepository accounts, int staleHours)
+        => new(repo, accounts, BuildConfig(staleHours), new FakeGameplayRepository(), new FakeGameRules());
 
     private class FakeGameplayRepository : IGameplayRepository
     {
@@ -144,7 +198,12 @@ public class LobbyUseCaseTests
     private class FakeGameRules : IGameRules
     {
         public GameState NewGame(List<string> playerNames)
-            => new GameState { SessionId = Guid.NewGuid().ToString("N"), Players = playerNames.Select(n => new PlayerState { Name = n }).ToList(), Board = [] };
+            => new()
+            {
+                SessionId = Guid.NewGuid().ToString("N"),
+                Players = playerNames.Select(n => new PlayerState { Name = n }).ToList(),
+                Board = []
+            };
 
         public void RollForTurn(GameState state) { }
         public void ActivePlayerSelect(GameState state, ActiveSelectionRequest request) { }
@@ -196,5 +255,39 @@ public class LobbyUseCaseTests
 
         public void RemoveLobby(LobbyEntity lobby)
             => _lobbies.RemoveAll(l => l.Id == lobby.Id);
+    }
+
+    private class FakeAccountRepository : IAccountRepository
+    {
+        private readonly Dictionary<Guid, Account> _accounts = [];
+
+        public void Add(Guid id, string playerName)
+        {
+            _accounts[id] = new Account
+            {
+                Id = id,
+                Username = $"{playerName}-gh",
+                PlayerName = playerName,
+                NormalizedPlayerName = playerName.ToUpperInvariant(),
+                AvatarUrl = "https://example.com/avatar.png"
+            };
+        }
+
+        public Task<Account?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+            => Task.FromResult(_accounts.TryGetValue(id, out var account) ? account : null);
+
+        public Task<List<Account>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default)
+            => Task.FromResult(ids.Where(_accounts.ContainsKey).Select(id => _accounts[id]).ToList());
+
+        public Task<bool> ExistsByNormalizedPlayerNameAsync(
+            string normalizedPlayerName,
+            Guid? excludeAccountId = null,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult(_accounts.Values.Any(
+                a => a.NormalizedPlayerName == normalizedPlayerName &&
+                    (!excludeAccountId.HasValue || a.Id != excludeAccountId.Value)));
+
+        public Task SaveChangesAsync(CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
     }
 }

@@ -24,14 +24,14 @@ class AppRoutes {
 
 class AppRouter {
   static Map<String, WidgetBuilder> get routes => {
-        AppRoutes.gate: (_) => const SessionGateScreen(),
-        AppRoutes.login: (_) => const LoginScreen(),
-        AppRoutes.home: (_) => const HomeScreen(),
-        AppRoutes.createLobby: (_) => const CreateLobbyScreen(),
-        AppRoutes.joinLobby: (_) => const JoinLobbyScreen(),
-        AppRoutes.lobbyRoom: (_) => const LobbyRoomScreen(),
-        AppRoutes.game: (_) => const GameScreen(),
-        AppRoutes.settings: (_) => const SettingsScreen(),
-        AppRoutes.profile: (_) => const ProfileScreen(),
-      };
+    AppRoutes.gate: (_) => const SessionGateScreen(),
+    AppRoutes.login: (_) => const LoginScreen(),
+    AppRoutes.home: (_) => const HomeScreen(),
+    AppRoutes.createLobby: (_) => const CreateLobbyScreen(),
+    AppRoutes.joinLobby: (_) => const JoinLobbyScreen(),
+    AppRoutes.lobbyRoom: (_) => const LobbyRoomScreen(),
+    AppRoutes.game: (_) => const GameScreen(),
+    AppRoutes.settings: (_) => const SettingsScreen(),
+    AppRoutes.profile: (_) => const ProfileScreen(),
+  };
 }

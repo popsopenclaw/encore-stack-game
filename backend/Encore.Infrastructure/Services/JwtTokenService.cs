@@ -19,6 +19,7 @@ public class JwtTokenService(IConfiguration configuration)
         {
             new Claim(JwtRegisteredClaimNames.Sub, account.Id.ToString()),
             new Claim("username", account.Username),
+            new Claim("player_name", account.PlayerName),
             new Claim("github_id", account.GitHubId.ToString())
         };
 

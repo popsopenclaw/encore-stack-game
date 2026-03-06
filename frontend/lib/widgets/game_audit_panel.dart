@@ -4,16 +4,44 @@ import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 
+class GameAuditMatchInfo {
+  const GameAuditMatchInfo({
+    required this.sessionId,
+    required this.phase,
+    required this.resolver,
+    required this.openDraftTurnsRemaining,
+    required this.jokersRemaining,
+    required this.endTriggered,
+    required this.isFinished,
+    required this.status,
+  });
+
+  final String? sessionId;
+  final String phase;
+  final String resolver;
+  final int openDraftTurnsRemaining;
+  final int jokersRemaining;
+  final bool endTriggered;
+  final bool isFinished;
+  final String status;
+}
+
 class GameAuditPanel extends StatelessWidget {
-  const GameAuditPanel({super.key, required this.scores, required this.events});
+  const GameAuditPanel({
+    super.key,
+    required this.scores,
+    required this.events,
+    required this.matchInfo,
+  });
 
   final List<dynamic> scores;
   final List<dynamic> events;
+  final GameAuditMatchInfo matchInfo;
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -21,21 +49,23 @@ class GameAuditPanel extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           Container(
             decoration: BoxDecoration(
-              color: AppPalette.surfaceRaised,
+              color: AppPalette.surfaceInset,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: AppPalette.borderLight),
             ),
             child: const TabBar(
-              dividerColor: Colors.transparent,
-              tabs: [Tab(text: 'Scores'), Tab(text: 'Timeline')],
+              tabs: [
+                Tab(text: 'Scores'),
+                Tab(text: 'Timeline'),
+                Tab(text: 'Info'),
+              ],
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          SizedBox(
-            height: 220,
+          Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: AppPalette.surfaceRaised,
+                color: AppPalette.surfaceInset,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: AppPalette.borderLight),
               ),
@@ -44,6 +74,7 @@ class GameAuditPanel extends StatelessWidget {
                 children: [
                   _ScoresView(scores: scores),
                   _TimelineView(events: events),
+                  _InfoView(matchInfo: matchInfo),
                 ],
               ),
             ),
@@ -85,6 +116,7 @@ class _AuditListTile extends StatelessWidget {
 
 class _ScoresView extends StatelessWidget {
   const _ScoresView({required this.scores});
+
   final List<dynamic> scores;
 
   @override
@@ -107,7 +139,7 @@ class _ScoresView extends StatelessWidget {
           trailing: Text(
             '${(row['isWinner'] == true) ? 'Winner • ' : ''}R${row['rank'] ?? '-'} • T${row['tiebreakExclamationMarks'] ?? row['jokerBonus'] ?? '-'}\nTotal ${row['total']}',
             textAlign: TextAlign.right,
-            style: const TextStyle(fontWeight: FontWeight.w800),
+            style: const TextStyle(fontWeight: FontWeight.w900),
           ),
         );
       },
@@ -117,6 +149,7 @@ class _ScoresView extends StatelessWidget {
 
 class _TimelineView extends StatelessWidget {
   const _TimelineView({required this.events});
+
   final List<dynamic> events;
 
   @override
@@ -140,4 +173,45 @@ class _TimelineView extends StatelessWidget {
       },
     );
   }
+}
+
+class _InfoView extends StatelessWidget {
+  const _InfoView({required this.matchInfo});
+
+  final GameAuditMatchInfo matchInfo;
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = <MapEntry<String, String>>[
+      MapEntry('Session', matchInfo.sessionId ?? '-'),
+      MapEntry('Phase', _prettyEnum(matchInfo.phase)),
+      MapEntry('Resolver', matchInfo.resolver),
+      MapEntry('Open Draft', '${matchInfo.openDraftTurnsRemaining}'),
+      MapEntry('Jokers Left', '${matchInfo.jokersRemaining}'),
+      MapEntry('End Triggered', matchInfo.endTriggered ? 'Yes' : 'No'),
+      MapEntry('Finished', matchInfo.isFinished ? 'Yes' : 'No'),
+      MapEntry('Status', matchInfo.status),
+    ];
+
+    return ListView.separated(
+      itemCount: rows.length,
+      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.xs),
+      itemBuilder: (context, index) {
+        final row = rows[index];
+        return _AuditListTile(
+          title: Text(row.key),
+          subtitle: Text(row.value, style: AppTextStyles.bodyMuted),
+        );
+      },
+    );
+  }
+}
+
+String _prettyEnum(String raw) {
+  final s = raw.replaceAllMapped(
+    RegExp(r'([a-z])([A-Z])'),
+    (m) => '${m[1]} ${m[2]}',
+  );
+  if (s.isEmpty) return raw;
+  return s[0].toUpperCase() + s.substring(1);
 }

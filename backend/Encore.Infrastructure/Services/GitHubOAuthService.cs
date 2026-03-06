@@ -1,5 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
+using Encore.Application.Abstractions;
+using Encore.Application.Profile;
 using Encore.Infrastructure.Data;
 using Encore.Domain.Models;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +9,11 @@ using Microsoft.Extensions.Configuration;
 
 namespace Encore.Infrastructure.Services;
 
-public class GitHubOAuthService(IHttpClientFactory httpClientFactory, IConfiguration configuration, AppDbContext dbContext)
+public class GitHubOAuthService(
+    IHttpClientFactory httpClientFactory,
+    IConfiguration configuration,
+    AppDbContext dbContext,
+    IPlayerNameGenerator playerNameGenerator)
 {
     public string BuildAuthorizeUrl(string? state)
     {
@@ -64,10 +70,13 @@ public class GitHubOAuthService(IHttpClientFactory httpClientFactory, IConfigura
         var account = await dbContext.Accounts.FirstOrDefaultAsync(a => a.GitHubId == githubId, cancellationToken);
         if (account is null)
         {
+            var playerName = await GenerateUniquePlayerNameAsync(cancellationToken);
             account = new Account
             {
                 GitHubId = githubId,
                 Username = username,
+                PlayerName = playerName,
+                NormalizedPlayerName = PlayerNamePolicy.Normalize(playerName),
                 Email = email,
                 AvatarUrl = avatarUrl
             };
@@ -83,5 +92,21 @@ public class GitHubOAuthService(IHttpClientFactory httpClientFactory, IConfigura
 
         await dbContext.SaveChangesAsync(cancellationToken);
         return account;
+    }
+
+    private async Task<string> GenerateUniquePlayerNameAsync(CancellationToken cancellationToken)
+    {
+        for (var attempt = 0; attempt < 32; attempt++)
+        {
+            var candidate = playerNameGenerator.GenerateCandidate();
+            var normalized = PlayerNamePolicy.Normalize(candidate);
+            var exists = await dbContext.Accounts.AnyAsync(
+                a => a.NormalizedPlayerName == normalized,
+                cancellationToken);
+            if (!exists)
+                return candidate;
+        }
+
+        throw new InvalidOperationException("Could not generate a unique player name.");
     }
 }

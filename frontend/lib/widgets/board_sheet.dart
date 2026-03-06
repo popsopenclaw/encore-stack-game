@@ -29,107 +29,88 @@ class BoardSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            color: AppPalette.boardFrame,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: const [
-              BoxShadow(
-                color: AppPalette.boardFrameShadow,
-                blurRadius: 14,
-                offset: Offset(0, 8),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.all(12),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final compact = constraints.maxWidth < 760;
-              return Column(
-                children: [
-                  Expanded(
-                    child:
-                        compact
-                            ? Column(
-                              children: [
-                                Expanded(
-                                  child: BoardGrid(
-                                    board: board,
-                                    colorFor: colorFor,
-                                    selectedCellIds: selectedCellIds,
-                                    onCellTap: onCellTap,
-                                    interactionEnabled: interactionEnabled,
-                                    blockedCellIds: blockedCellIds,
-                                    blockedTapHintForCell:
-                                        blockedTapHintForCell,
-                                    onBlockedTapHint: onBlockedTapHint,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                const SideScoreLegend(compact: true),
-                              ],
-                            )
-                            : Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: BoardGrid(
-                                    board: board,
-                                    colorFor: colorFor,
-                                    selectedCellIds: selectedCellIds,
-                                    onCellTap: onCellTap,
-                                    interactionEnabled: interactionEnabled,
-                                    blockedCellIds: blockedCellIds,
-                                    blockedTapHintForCell:
-                                        blockedTapHintForCell,
-                                    onBlockedTapHint: onBlockedTapHint,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                const SideScoreLegend(),
-                              ],
-                            ),
-                  ),
-                  if (interactionHint != null &&
-                      interactionHint!.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        interactionHint!,
-                        style: AppTextStyles.bodyMuted.copyWith(
-                          color: AppPalette.textOnDark,
-                        ),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 8),
-                  const BottomRulesStrip(),
-                ],
-              );
-            },
-          ),
-        ),
-        const Positioned(left: -10, top: 80, child: _FrameNotch()),
-        const Positioned(right: -10, top: 80, child: _FrameNotch()),
-      ],
-    );
-  }
-}
-
-class _FrameNotch extends StatelessWidget {
-  const _FrameNotch();
-
-  @override
-  Widget build(BuildContext context) {
     return Container(
-      width: 20,
-      height: 64,
       decoration: BoxDecoration(
-        color: AppPalette.boardNotch,
-        borderRadius: BorderRadius.circular(10),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF0B1A3F), Color(0xFF071431), Color(0xFF060F27)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppPalette.panelLine),
+        boxShadow: const [
+          BoxShadow(
+            color: AppPalette.neonGlow,
+            blurRadius: 18,
+            spreadRadius: -3,
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(12),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 780;
+
+          return Column(
+            children: [
+              Expanded(
+                child:
+                    compact
+                        ? Column(
+                          children: [
+                            Expanded(
+                              child: BoardGrid(
+                                board: board,
+                                colorFor: colorFor,
+                                selectedCellIds: selectedCellIds,
+                                onCellTap: onCellTap,
+                                interactionEnabled: interactionEnabled,
+                                blockedCellIds: blockedCellIds,
+                                blockedTapHintForCell: blockedTapHintForCell,
+                                onBlockedTapHint: onBlockedTapHint,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const SideScoreLegend(compact: true),
+                          ],
+                        )
+                        : Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: BoardGrid(
+                                board: board,
+                                colorFor: colorFor,
+                                selectedCellIds: selectedCellIds,
+                                onCellTap: onCellTap,
+                                interactionEnabled: interactionEnabled,
+                                blockedCellIds: blockedCellIds,
+                                blockedTapHintForCell: blockedTapHintForCell,
+                                onBlockedTapHint: onBlockedTapHint,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const SideScoreLegend(),
+                          ],
+                        ),
+              ),
+              if (interactionHint != null && interactionHint!.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    interactionHint!,
+                    style: AppTextStyles.bodyMuted.copyWith(
+                      color: AppPalette.textOnDark,
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 8),
+              const BottomRulesStrip(),
+            ],
+          );
+        },
       ),
     );
   }
@@ -142,73 +123,102 @@ class SideScoreLegend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget row(Color c, String a, String b) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
-        children: [
-          Container(
-            width: 26,
-            height: 26,
-            decoration: BoxDecoration(
-              color: c,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: AppPalette.borderDark),
-            ),
-          ),
-          const SizedBox(width: 6),
-          _pill(a),
-          const SizedBox(width: 3),
-          _pill(b),
-        ],
-      ),
-    );
-
-    return SizedBox(
-      width: compact ? null : 136,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 14),
-          row(AppPalette.tileGreen, '5', '3'),
-          row(AppPalette.tileYellow, '5', '3'),
-          row(AppPalette.tileBlue, '5', '3'),
-          row(AppPalette.tilePurple, '5', '3'),
-          row(AppPalette.tileOrange, '5', '3'),
-          const SizedBox(height: 8),
-          const Text('BONUS =', style: AppTextStyles.boardLabel),
-          const SizedBox(height: 8),
-          const _RuleLine('A-O', '+', AppPalette.success),
-          const _RuleLine('!', '+1', AppPalette.success),
-          const _RuleLine('★', '-2', AppPalette.danger),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppPalette.white,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              'TOTAL =',
-              style: AppTextStyles.boardValue.copyWith(
-                color: AppPalette.textPrimary,
+    Widget row(Color c, String a, String b) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Row(
+          children: [
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: c,
+                borderRadius: BorderRadius.circular(7),
+                border: Border.all(
+                  color: AppPalette.white.withValues(alpha: 0.25),
+                ),
               ),
             ),
+            const SizedBox(width: 8),
+            _pill(a),
+            const SizedBox(width: 4),
+            _pill(b),
+          ],
+        ),
+      );
+    }
+
+    final body = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'SCORES',
+          style: TextStyle(
+            color: AppPalette.neonCyan,
+            fontWeight: FontWeight.w900,
+            fontSize: 16,
+            letterSpacing: 0.9,
           ),
-        ],
+        ),
+        const SizedBox(height: 8),
+        row(AppPalette.tileGreen, '5', '3'),
+        row(AppPalette.tileYellow, '5', '3'),
+        row(AppPalette.tileBlue, '5', '3'),
+        row(AppPalette.tilePurple, '5', '3'),
+        row(AppPalette.tileOrange, '5', '3'),
+        const SizedBox(height: 10),
+        const _RuleLine('A-O', '+5', AppPalette.success),
+        const _RuleLine('!', '+1', AppPalette.success),
+        const _RuleLine('★', '-2', AppPalette.danger),
+        const SizedBox(height: 10),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppPalette.surfaceInset,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppPalette.borderLight),
+          ),
+          child: const Text('TOTAL =', style: AppTextStyles.boardLabel),
+        ),
+      ],
+    );
+
+    if (compact) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppPalette.surfaceInset,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppPalette.borderLight),
+        ),
+        child: body,
+      );
+    }
+
+    return SizedBox(width: 190, child: body);
+  }
+
+  Widget _pill(String t) {
+    return Container(
+      width: 24,
+      height: 24,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: AppPalette.surfaceInset,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AppPalette.borderLight),
+      ),
+      child: Text(
+        t,
+        style: const TextStyle(
+          fontWeight: FontWeight.w900,
+          color: AppPalette.textPrimary,
+        ),
       ),
     );
   }
-
-  Widget _pill(String t) => Container(
-    width: 22,
-    height: 22,
-    alignment: Alignment.center,
-    decoration: BoxDecoration(
-      color: AppPalette.white,
-      borderRadius: BorderRadius.circular(6),
-    ),
-    child: Text(t, style: const TextStyle(fontWeight: FontWeight.bold)),
-  );
 }
 
 class _RuleLine extends StatelessWidget {
@@ -221,23 +231,30 @@ class _RuleLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         children: [
           Expanded(
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
               decoration: BoxDecoration(
-                color: AppPalette.white,
+                color: AppPalette.surfaceInset,
                 borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppPalette.borderLight),
               ),
-              child: Text(label, style: AppTextStyles.boardLabel),
+              child: Text(
+                label,
+                style: AppTextStyles.boardHeader.copyWith(fontSize: 14),
+              ),
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 6),
           Text(
             value,
-            style: AppTextStyles.boardValue.copyWith(color: valueColor),
+            style: AppTextStyles.boardHeader.copyWith(
+              color: valueColor,
+              fontSize: 18,
+            ),
           ),
         ],
       ),
@@ -251,10 +268,14 @@ class BottomRulesStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(8),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
       decoration: BoxDecoration(
-        color: AppPalette.stripBg,
+        gradient: const LinearGradient(
+          colors: [Color(0xFF081B41), Color(0xFF071330)],
+        ),
         borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppPalette.borderLight),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -264,7 +285,7 @@ class BottomRulesStrip extends StatelessWidget {
             const SizedBox(width: 6),
             _capsule('✖'),
             const SizedBox(width: 6),
-            const Text('=', style: AppTextStyles.boardValue),
+            const Text('=', style: AppTextStyles.boardLabel),
             const SizedBox(width: 10),
             ...List.generate(
               8,
@@ -279,27 +300,33 @@ class BottomRulesStrip extends StatelessWidget {
     );
   }
 
-  Widget _capsule(String t) => Container(
-    width: 34,
-    height: 34,
-    alignment: Alignment.center,
-    decoration: BoxDecoration(
-      color: AppPalette.white,
-      borderRadius: BorderRadius.circular(10),
-    ),
-    child: Text(t, style: AppTextStyles.boardLabel),
-  );
+  Widget _capsule(String t) {
+    return Container(
+      width: 34,
+      height: 34,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: AppPalette.surfaceRaised,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppPalette.borderLight),
+      ),
+      child: Text(t, style: AppTextStyles.boardHeader.copyWith(fontSize: 18)),
+    );
+  }
 
-  Widget _circle(String t) => Container(
-    width: 34,
-    height: 34,
-    alignment: Alignment.center,
-    decoration: const BoxDecoration(
-      color: AppPalette.white,
-      shape: BoxShape.circle,
-    ),
-    child: Text(t, style: AppTextStyles.boardLabel),
-  );
+  Widget _circle(String t) {
+    return Container(
+      width: 34,
+      height: 34,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: AppPalette.surfaceRaised,
+        shape: BoxShape.circle,
+        border: Border.all(color: AppPalette.borderLight),
+      ),
+      child: Text(t, style: AppTextStyles.boardHeader.copyWith(fontSize: 17)),
+    );
+  }
 }
 
 class BoardGrid extends StatelessWidget {
@@ -340,23 +367,26 @@ class BoardGrid extends StatelessWidget {
     const lowPts = [3, 2, 2, 2, 1, 1, 1, 0, 1, 1, 1, 2, 2, 2, 3];
     const letters = 'ABCDEFGHIJKLMNO';
 
-    Widget pill(String t, {Color? bg, Color? fg}) => Container(
-      width: 30,
-      height: 26,
-      margin: const EdgeInsets.all(1.5),
-      decoration: BoxDecoration(
-        color: bg ?? AppPalette.white,
-        borderRadius: BorderRadius.circular(7),
-        border: Border.all(color: AppPalette.borderLight),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        t,
-        style: AppTextStyles.boardHeader.copyWith(
-          color: fg ?? AppPalette.textPrimary,
+    Widget pill(String t, {Color? bg, Color? fg}) {
+      return Container(
+        width: 30,
+        height: 26,
+        margin: const EdgeInsets.all(1.5),
+        decoration: BoxDecoration(
+          color: bg ?? AppPalette.surfaceInset,
+          borderRadius: BorderRadius.circular(7),
+          border: Border.all(color: AppPalette.borderLight),
         ),
-      ),
-    );
+        alignment: Alignment.center,
+        child: Text(
+          t,
+          style: AppTextStyles.boardHeader.copyWith(
+            color: fg ?? AppPalette.textPrimary,
+            fontSize: 14,
+          ),
+        ),
+      );
+    }
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -383,6 +413,7 @@ class BoardGrid extends StatelessWidget {
                   final isSelected = selectedCellIds.contains(cellId);
                   final isBlocked = blockedCellIds.contains(cellId);
                   final isTapEnabled = interactionEnabled && !isBlocked;
+
                   return GestureDetector(
                     onTap: () {
                       if (isTapEnabled) {
@@ -399,17 +430,34 @@ class BoardGrid extends StatelessWidget {
                       height: 30,
                       margin: const EdgeInsets.all(1.5),
                       decoration: BoxDecoration(
-                        color: colorFor(
-                          (c['color'] as String),
-                        ).withValues(alpha: isTapEnabled ? 1 : 0.42),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            colorFor(
+                              (c['color'] as String),
+                            ).withValues(alpha: isTapEnabled ? 1 : 0.44),
+                            colorFor(
+                              (c['color'] as String),
+                            ).withValues(alpha: isTapEnabled ? 0.78 : 0.34),
+                          ],
+                        ),
                         borderRadius: BorderRadius.circular(7),
                         border: Border.all(
                           color:
                               isSelected
-                                  ? AppPalette.white
-                                  : AppPalette.borderDark,
+                                  ? AppPalette.neonCyan
+                                  : AppPalette.white.withValues(alpha: 0.32),
                           width: isSelected ? 2 : 1,
                         ),
+                        boxShadow: [
+                          if (isSelected)
+                            const BoxShadow(
+                              color: AppPalette.neonGlow,
+                              blurRadius: 8,
+                              spreadRadius: -2,
+                            ),
+                        ],
                       ),
                       child:
                           (c['starred'] as bool)

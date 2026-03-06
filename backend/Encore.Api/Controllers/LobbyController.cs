@@ -97,6 +97,8 @@ public class LobbyController(ILobbyUseCase lobbyUseCase, LobbyRealtimeNotifier n
         try
         {
             var sessionId = await lobbyUseCase.StartMatchAsync(GetAccountId(), code, request);
+            var lobby = await lobbyUseCase.GetAsync(code);
+            if (lobby is not null) await notifier.LobbyUpdatedAsync(lobby);
             return Ok(new { sessionId });
         }
         catch (KeyNotFoundException ex)
@@ -132,6 +134,8 @@ public class LobbyController(ILobbyUseCase lobbyUseCase, LobbyRealtimeNotifier n
             lobby.HostAccountId,
             lobby.HostDisplayName,
             lobby.Members,
+            lobby.ActiveSessionId,
+            lobby.HasActiveGame,
             isHostForCurrentUser = lobby.HostAccountId == viewerAccountId
         };
 

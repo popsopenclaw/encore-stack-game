@@ -43,10 +43,10 @@ class AppRadius extends ThemeExtension<AppRadius> {
   }
 
   static const AppRadius standard = AppRadius(
-    card: 14,
-    panel: 16,
+    card: 18,
+    panel: 20,
     pill: 999,
-    control: 10,
+    control: 12,
   );
 }
 
@@ -57,12 +57,16 @@ class AppSurface extends ThemeExtension<AppSurface> {
     required this.panelText,
     required this.inset,
     required this.raised,
+    required this.frameStroke,
+    required this.glow,
   });
 
   final Color boardLikePanel;
   final Color panelText;
   final Color inset;
   final Color raised;
+  final Color frameStroke;
+  final Color glow;
 
   @override
   AppSurface copyWith({
@@ -70,11 +74,15 @@ class AppSurface extends ThemeExtension<AppSurface> {
     Color? panelText,
     Color? inset,
     Color? raised,
+    Color? frameStroke,
+    Color? glow,
   }) => AppSurface(
     boardLikePanel: boardLikePanel ?? this.boardLikePanel,
     panelText: panelText ?? this.panelText,
     inset: inset ?? this.inset,
     raised: raised ?? this.raised,
+    frameStroke: frameStroke ?? this.frameStroke,
+    glow: glow ?? this.glow,
   );
 
   @override
@@ -86,6 +94,8 @@ class AppSurface extends ThemeExtension<AppSurface> {
       panelText: Color.lerp(panelText, other.panelText, t) ?? panelText,
       inset: Color.lerp(inset, other.inset, t) ?? inset,
       raised: Color.lerp(raised, other.raised, t) ?? raised,
+      frameStroke: Color.lerp(frameStroke, other.frameStroke, t) ?? frameStroke,
+      glow: Color.lerp(glow, other.glow, t) ?? glow,
     );
   }
 
@@ -94,5 +104,7 @@ class AppSurface extends ThemeExtension<AppSurface> {
     panelText: AppPalette.textPrimary,
     inset: AppPalette.surfaceInset,
     raised: AppPalette.surfaceRaised,
+    frameStroke: AppPalette.panelLine,
+    glow: AppPalette.neonGlow,
   );
 }

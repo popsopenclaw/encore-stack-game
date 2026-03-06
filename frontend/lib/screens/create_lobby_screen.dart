@@ -7,6 +7,7 @@ import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/common_card.dart';
+import '../widgets/ui_kit.dart';
 
 class CreateLobbyScreen extends StatefulWidget {
   const CreateLobbyScreen({super.key});
@@ -17,7 +18,6 @@ class CreateLobbyScreen extends StatefulWidget {
 
 class _CreateLobbyScreenState extends State<CreateLobbyScreen> {
   final _name = TextEditingController(text: 'Encore Lobby');
-  final _displayName = TextEditingController(text: 'Host');
   int _maxPlayers = 4;
   bool _creating = false;
   String? _error;
@@ -25,20 +25,14 @@ class _CreateLobbyScreenState extends State<CreateLobbyScreen> {
   @override
   void dispose() {
     _name.dispose();
-    _displayName.dispose();
     super.dispose();
   }
 
   Future<void> _create() async {
     final lobbyName = _name.text.trim();
-    final displayName = _displayName.text.trim();
 
     if (lobbyName.isEmpty) {
       setState(() => _error = 'Lobby name is required.');
-      return;
-    }
-    if (displayName.isEmpty) {
-      setState(() => _error = 'Display name is required.');
       return;
     }
 
@@ -47,11 +41,7 @@ class _CreateLobbyScreenState extends State<CreateLobbyScreen> {
       _error = null;
     });
 
-    await lobbyController.createLobby(
-      name: lobbyName,
-      max: _maxPlayers,
-      hostDisplayName: displayName,
-    );
+    await lobbyController.createLobby(name: lobbyName, max: _maxPlayers);
 
     if (!mounted) return;
     setState(() => _creating = false);
@@ -68,74 +58,86 @@ class _CreateLobbyScreenState extends State<CreateLobbyScreen> {
   Widget build(BuildContext context) {
     return AppShell(
       title: 'Create Lobby',
-      child: Center(
-        child: SizedBox(
-          width: 560,
-          child: CommonCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Create a new multiplayer lobby',
-                  style: AppTextStyles.title,
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                const Text(
-                  'Set the basics and invite friends using the generated lobby code.',
-                  style: AppTextStyles.bodyMuted,
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                TextField(
-                  controller: _name,
-                  decoration: const InputDecoration(labelText: 'Lobby name'),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                TextField(
-                  controller: _displayName,
-                  decoration: const InputDecoration(
-                    labelText: 'Your display name',
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                const Text('Max players', style: AppTextStyles.subtitle),
-                Slider(
-                  value: _maxPlayers.toDouble(),
-                  min: 2,
-                  max: 6,
-                  divisions: 4,
-                  label: '$_maxPlayers',
-                  onChanged:
-                      _creating
-                          ? null
-                          : (v) => setState(() => _maxPlayers = v.round()),
-                ),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Text('$_maxPlayers players'),
-                ),
-                if (_error != null) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    _error!,
-                    style: const TextStyle(color: AppPalette.danger),
-                  ),
-                ],
-                const SizedBox(height: AppSpacing.lg),
-                Row(
+      child: ListView(
+        children: [
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 820),
+              child: CommonCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: _creating ? null : _create,
-                        icon: const Icon(Icons.group_add),
-                        label: Text(_creating ? 'Creating...' : 'Create Lobby'),
+                    const Text('Create Lobby', style: AppTextStyles.title),
+                    const SizedBox(height: AppSpacing.xs),
+                    const Text(
+                      'Configure your room and launch a multiplayer session. Your saved player name will be used automatically.',
+                      style: AppTextStyles.bodyMuted,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Wrap(
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.xs,
+                      children: const [
+                        AppMetaPill(text: 'Host Controls', emphasis: true),
+                        AppMetaPill(text: '2 to 6 Players'),
+                        AppMetaPill(text: 'Realtime Lobby'),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    TextField(
+                      controller: _name,
+                      decoration: const InputDecoration(
+                        labelText: 'Lobby name',
                       ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    const Text('Max players', style: AppTextStyles.subtitle),
+                    Slider(
+                      value: _maxPlayers.toDouble(),
+                      min: 2,
+                      max: 6,
+                      divisions: 4,
+                      label: '$_maxPlayers',
+                      onChanged:
+                          _creating
+                              ? null
+                              : (v) => setState(() => _maxPlayers = v.round()),
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: AppMetaPill(text: '$_maxPlayers players'),
+                    ),
+                    if (_error != null) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        _error!,
+                        style: const TextStyle(
+                          color: AppPalette.danger,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: AppSpacing.lg),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: _creating ? null : _create,
+                            icon: const Icon(Icons.group_add),
+                            label: Text(
+                              _creating ? 'Creating...' : 'Create Lobby',
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

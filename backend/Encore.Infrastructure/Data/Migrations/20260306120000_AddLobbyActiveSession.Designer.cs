@@ -3,6 +3,7 @@ using System;
 using Encore.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Encore.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260306120000_AddLobbyActiveSession")]
+    partial class AddLobbyActiveSession
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -41,16 +44,6 @@ namespace Encore.Infrastructure.Data.Migrations
                     b.Property<long>("GitHubId")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("NormalizedPlayerName")
-                        .IsRequired()
-                        .HasMaxLength(24)
-                        .HasColumnType("character varying(24)");
-
-                    b.Property<string>("PlayerName")
-                        .IsRequired()
-                        .HasMaxLength(24)
-                        .HasColumnType("character varying(24)");
-
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -61,9 +54,6 @@ namespace Encore.Infrastructure.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("GitHubId")
-                        .IsUnique();
-
-                    b.HasIndex("NormalizedPlayerName")
                         .IsUnique();
 
                     b.HasIndex("Username")

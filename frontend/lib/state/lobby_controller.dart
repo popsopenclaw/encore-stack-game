@@ -15,8 +15,9 @@ class LobbyController extends ChangeNotifier {
 
   String? lobbyCode;
   String lobbyName = '';
+  String? activeSessionId;
+  bool hasActiveGame = false;
   int maxPlayers = 6;
-  String displayName = 'Player';
   String status = 'Ready';
   RealtimeStatus realtimeStatus = RealtimeStatus.disconnected;
   List<Map<String, dynamic>> lobbies = const [];
@@ -38,10 +39,15 @@ class LobbyController extends ChangeNotifier {
         backendUrl: _backendUrl,
         jwt: _jwt,
         onLobbyUpdated: (lobby) {
-          if (lobbyCode != null && (lobby['code']?.toString().toUpperCase() == lobbyCode)) {
+          if (lobbyCode != null &&
+              (lobby['code']?.toString().toUpperCase() == lobbyCode)) {
             _bindLobby(lobby);
           }
-          final idx = lobbies.indexWhere((l) => (l['code']?.toString().toUpperCase()) == (lobby['code']?.toString().toUpperCase()));
+          final idx = lobbies.indexWhere(
+            (l) =>
+                (l['code']?.toString().toUpperCase()) ==
+                (lobby['code']?.toString().toUpperCase()),
+          );
           if (idx >= 0) {
             lobbies[idx] = lobby;
           } else {
@@ -61,7 +67,9 @@ class LobbyController extends ChangeNotifier {
       );
     }
 
-    await refreshLobbies();
+    if (_jwt != null && _jwt!.isNotEmpty) {
+      await refreshLobbies();
+    }
   }
 
   Future<void> refreshSessionConfig() async {
@@ -73,25 +81,32 @@ class LobbyController extends ChangeNotifier {
   String get backendUrl => _backendUrl;
   String? get jwt => _jwt;
   String? get currentAccountId => _jwt == null ? null : _readSubFromJwt(_jwt!);
+  bool get hasResumableCurrentGame =>
+      hasActiveGame &&
+      activeSessionId != null &&
+      activeSessionId!.trim().isNotEmpty;
   bool _isHostForCurrentUser = false;
   bool get isCurrentUserHost => _isHostForCurrentUser;
 
   ApiClient get _api => ApiClient(baseUrl: _backendUrl, jwt: _jwt);
 
-  Future<void> createLobby({required String name, required int max, required String hostDisplayName}) async {
+  Future<void> createLobby({required String name, required int max}) async {
     await _withStatus('Creating lobby', () async {
       await refreshSessionConfig();
-      final lobby = await _api.createLobby(name: name, maxPlayers: max.clamp(1, 6), hostDisplayName: hostDisplayName);
+      final lobby = await _api.createLobby(
+        name: name,
+        maxPlayers: max.clamp(1, 6),
+      );
       _bindLobby(lobby);
       if (lobbyCode != null) await _realtime.joinLobbyGroup(lobbyCode!);
       await refreshLobbies();
     });
   }
 
-  Future<void> joinLobby({required String code, required String name}) async {
+  Future<void> joinLobby({required String code}) async {
     await _withStatus('Joining lobby', () async {
       await refreshSessionConfig();
-      final lobby = await _api.joinLobby(code: code.trim().toUpperCase(), displayName: name.trim());
+      final lobby = await _api.joinLobby(code: code.trim().toUpperCase());
       _bindLobby(lobby);
       if (lobbyCode != null) await _realtime.joinLobbyGroup(lobbyCode!);
       await refreshLobbies();
@@ -107,6 +122,8 @@ class LobbyController extends ChangeNotifier {
       await _realtime.leaveLobbyGroup(current);
       lobbyCode = null;
       lobbyName = '';
+      activeSessionId = null;
+      hasActiveGame = false;
       members = const [];
       await refreshLobbies();
     });
@@ -129,9 +146,31 @@ class LobbyController extends ChangeNotifier {
     });
   }
 
+  Future<String?> resolveCurrentLobbySession() async {
+    if (lobbyCode == null) return null;
+    if (hasResumableCurrentGame) return activeSessionId;
+    await refreshCurrentLobby();
+    return hasResumableCurrentGame ? activeSessionId : null;
+  }
+
+  void markCurrentLobbyStarted(String sessionId) {
+    final trimmed = sessionId.trim();
+    if (trimmed.isEmpty) return;
+    activeSessionId = trimmed;
+    hasActiveGame = true;
+    _syncLobbyListEntry(
+      (lobby) => {...lobby, 'activeSessionId': trimmed, 'hasActiveGame': true},
+    );
+    notifyListeners();
+  }
+
   void _bindLobby(Map<String, dynamic> lobby) {
     lobbyCode = (lobby['code'] as String?)?.toUpperCase();
     lobbyName = (lobby['name'] as String?) ?? '';
+    activeSessionId = lobby['activeSessionId']?.toString();
+    hasActiveGame =
+        (lobby['hasActiveGame'] as bool?) ??
+        (activeSessionId != null && activeSessionId!.trim().isNotEmpty);
     maxPlayers = (lobby['maxPlayers'] as int?) ?? 6;
     hostDisplayName = lobby['hostDisplayName']?.toString();
     hostAccountId = lobby['hostAccountId']?.toString();
@@ -145,9 +184,10 @@ class LobbyController extends ChangeNotifier {
     }
 
     final rawMembers = (lobby['members'] as List<dynamic>?) ?? const [];
-    members = rawMembers
-        .map((e) => (e as Map).map((k, v) => MapEntry('$k', v)))
-        .map((m) {
+    members =
+        rawMembers.map((e) => (e as Map).map((k, v) => MapEntry('$k', v))).map((
+          m,
+        ) {
           final accountId = m['accountId']?.toString() ?? '';
           final isHost = accountId.isNotEmpty && accountId == hostAccountId;
           readyByAccountId.putIfAbsent(accountId, () => false);
@@ -156,9 +196,23 @@ class LobbyController extends ChangeNotifier {
             'isHost': isHost,
             'isReady': readyByAccountId[accountId] ?? false,
           };
-        })
-        .toList();
+        }).toList();
 
+    _syncLobbyListEntry((_) => lobby);
+  }
+
+  void _syncLobbyListEntry(
+    Map<String, dynamic> Function(Map<String, dynamic>) update,
+  ) {
+    final code = lobbyCode;
+    if (code == null) return;
+    final idx = lobbies.indexWhere(
+      (l) => (l['code']?.toString().toUpperCase()) == code,
+    );
+    if (idx < 0) return;
+    final next = [...lobbies];
+    next[idx] = update({...next[idx]});
+    lobbies = next;
   }
 
   Future<void> _withStatus(String label, Future<void> Function() op) async {
@@ -185,6 +239,8 @@ class LobbyController extends ChangeNotifier {
     realtimeStatus = RealtimeStatus.disconnected;
     lobbyCode = null;
     lobbyName = '';
+    activeSessionId = null;
+    hasActiveGame = false;
     hostDisplayName = null;
     hostAccountId = null;
     _isHostForCurrentUser = false;
@@ -199,12 +255,16 @@ class LobbyController extends ChangeNotifier {
     final id = currentAccountId;
     if (id == null || id.isEmpty) return;
     readyByAccountId[id] = !(readyByAccountId[id] ?? false);
-    members = members
-        .map((m) => {
-              ...m,
-              if ((m['accountId']?.toString() ?? '') == id) 'isReady': readyByAccountId[id],
-            })
-        .toList();
+    members =
+        members
+            .map(
+              (m) => {
+                ...m,
+                if ((m['accountId']?.toString() ?? '') == id)
+                  'isReady': readyByAccountId[id],
+              },
+            )
+            .toList();
     notifyListeners();
   }
 

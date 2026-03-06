@@ -6,12 +6,16 @@ namespace Encore.Api.IntegrationTests.Fakes;
 public class FakeLobbyUseCase : ILobbyUseCase
 {
     private readonly Dictionary<string, LobbyDto> _store = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<Guid, string> _playerNames = new();
 
     public Task<LobbyDto> CreateAsync(Guid accountId, CreateLobbyRequest request, CancellationToken cancellationToken = default)
     {
         var code = Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
-        var dto = new LobbyDto(Guid.NewGuid(), code, request.Name, request.MaxPlayers, accountId, request.HostDisplayName,
-            [new LobbyMemberDto(accountId, request.HostDisplayName, DateTimeOffset.UtcNow)]);
+        var hostName = GetPlayerName(accountId);
+        var dto = new LobbyDto(Guid.NewGuid(), code, request.Name, request.MaxPlayers, accountId, hostName,
+            [new LobbyMemberDto(accountId, hostName, DateTimeOffset.UtcNow)],
+            null,
+            false);
         _store[code] = dto;
         return Task.FromResult(dto);
     }
@@ -22,7 +26,7 @@ public class FakeLobbyUseCase : ILobbyUseCase
             throw new KeyNotFoundException();
 
         var members = lobby.Members.ToList();
-        members.Add(new LobbyMemberDto(accountId, request.DisplayName, DateTimeOffset.UtcNow));
+        members.Add(new LobbyMemberDto(accountId, GetPlayerName(accountId), DateTimeOffset.UtcNow));
         var updated = lobby with { Members = members };
         _store[lobby.Code] = updated;
         return Task.FromResult(updated);
@@ -59,7 +63,12 @@ public class FakeLobbyUseCase : ILobbyUseCase
         if (lobby.Members.FirstOrDefault()?.AccountId != accountId)
             throw new UnauthorizedAccessException("Only host can start a match");
 
-        return Task.FromResult("test-session");
+        if (!string.IsNullOrWhiteSpace(lobby.ActiveSessionId))
+            return Task.FromResult(lobby.ActiveSessionId!);
+
+        const string sessionId = "test-session";
+        _store[code] = lobby with { ActiveSessionId = sessionId, HasActiveGame = true };
+        return Task.FromResult(sessionId);
     }
 
     public Task LeaveAsync(Guid accountId, string code, CancellationToken cancellationToken = default)
@@ -70,5 +79,15 @@ public class FakeLobbyUseCase : ILobbyUseCase
             _store[code] = lobby with { Members = members };
         }
         return Task.CompletedTask;
+    }
+
+    private string GetPlayerName(Guid accountId)
+    {
+        if (_playerNames.TryGetValue(accountId, out var playerName))
+            return playerName;
+
+        playerName = $"player-{_playerNames.Count + 1}";
+        _playerNames[accountId] = playerName;
+        return playerName;
     }
 }

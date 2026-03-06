@@ -19,6 +19,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasIndex(a => a.Username)
             .IsUnique();
 
+        modelBuilder.Entity<Account>()
+            .HasIndex(a => a.NormalizedPlayerName)
+            .IsUnique();
+
+        modelBuilder.Entity<Account>()
+            .Property(a => a.PlayerName)
+            .HasMaxLength(Encore.Application.Profile.PlayerNamePolicy.MaxLength);
+
+        modelBuilder.Entity<Account>()
+            .Property(a => a.NormalizedPlayerName)
+            .HasMaxLength(Encore.Application.Profile.PlayerNamePolicy.MaxLength);
+
         modelBuilder.Entity<Lobby>()
             .HasIndex(l => l.Code)
             .IsUnique();
@@ -26,6 +38,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<Lobby>()
             .Property(l => l.Code)
             .HasMaxLength(16);
+
+        modelBuilder.Entity<Lobby>()
+            .Property(l => l.ActiveSessionId)
+            .HasMaxLength(64);
 
         modelBuilder.Entity<LobbyMember>()
             .HasIndex(m => new { m.LobbyId, m.AccountId })

@@ -30,14 +30,17 @@ class ApiErrorException implements Exception {
   final String message;
   final String? correlationId;
 
-  bool get isRetryable => code == ApiErrorCode.redisUnavailable || statusCode >= 500;
+  bool get isRetryable =>
+      code == ApiErrorCode.redisUnavailable || statusCode >= 500;
 
   @override
-  String toString() => 'ApiErrorException($statusCode, $code, $message, cid=$correlationId)';
+  String toString() =>
+      'ApiErrorException($statusCode, $code, $message, cid=$correlationId)';
 }
 
 class ApiClient {
-  ApiClient({required this.baseUrl, this.jwt, http.Client? httpClient}) : _http = httpClient ?? http.Client();
+  ApiClient({required this.baseUrl, this.jwt, http.Client? httpClient})
+    : _http = httpClient ?? http.Client();
 
   final String baseUrl;
   final String? jwt;
@@ -46,9 +49,9 @@ class ApiClient {
   Uri _u(String path) => Uri.parse('$baseUrl$path');
 
   Map<String, String> get _jsonHeaders => {
-        'Content-Type': 'application/json',
-        if (jwt != null && jwt!.isNotEmpty) 'Authorization': 'Bearer $jwt',
-      };
+    'Content-Type': 'application/json',
+    if (jwt != null && jwt!.isNotEmpty) 'Authorization': 'Bearer $jwt',
+  };
 
   Future<Map<String, dynamic>> getGitHubLoginUrl() async {
     final r = await _http.get(_u('/api/auth/github/url?state=encore-app'));
@@ -64,6 +67,22 @@ class ApiClient {
     return _decodeMap(r);
   }
 
+  Future<Map<String, dynamic>> getProfile() async {
+    final r = await _http.get(_u('/api/profile'), headers: _jsonHeaders);
+    return _decodeMap(r);
+  }
+
+  Future<Map<String, dynamic>> updateProfile({
+    required String playerName,
+  }) async {
+    final r = await _http.patch(
+      _u('/api/profile'),
+      headers: _jsonHeaders,
+      body: jsonEncode({'playerName': playerName}),
+    );
+    return _decodeMap(r);
+  }
+
   Future<Map<String, dynamic>> startGame(List<String> playerNames) async {
     final r = await _http.post(
       _u('/api/gameplay/start'),
@@ -74,12 +93,18 @@ class ApiClient {
   }
 
   Future<Map<String, dynamic>> getGame(String sessionId) async {
-    final r = await _http.get(_u('/api/gameplay/$sessionId'), headers: _jsonHeaders);
+    final r = await _http.get(
+      _u('/api/gameplay/$sessionId'),
+      headers: _jsonHeaders,
+    );
     return _decodeMap(r);
   }
 
   Future<Map<String, dynamic>> roll(String sessionId) async {
-    final r = await _http.post(_u('/api/gameplay/$sessionId/roll'), headers: _jsonHeaders);
+    final r = await _http.post(
+      _u('/api/gameplay/$sessionId/roll'),
+      headers: _jsonHeaders,
+    );
     return _decodeMap(r);
   }
 
@@ -103,8 +128,14 @@ class ApiClient {
     return _decodeMap(r);
   }
 
-  Future<Map<String, dynamic>> getAvailableDice(String sessionId, {required int playerIndex}) async {
-    final r = await _http.get(_u('/api/gameplay/$sessionId/available-dice/$playerIndex'), headers: _jsonHeaders);
+  Future<Map<String, dynamic>> getAvailableDice(
+    String sessionId, {
+    required int playerIndex,
+  }) async {
+    final r = await _http.get(
+      _u('/api/gameplay/$sessionId/available-dice/$playerIndex'),
+      headers: _jsonHeaders,
+    );
     return _decodeMap(r);
   }
 
@@ -131,43 +162,38 @@ class ApiClient {
   }
 
   Future<List<dynamic>> getScore(String sessionId) async {
-    final r = await _http.get(_u('/api/gameplay/$sessionId/score'), headers: _jsonHeaders);
+    final r = await _http.get(
+      _u('/api/gameplay/$sessionId/score'),
+      headers: _jsonHeaders,
+    );
     return _decodeList(r);
   }
 
   Future<List<dynamic>> getEvents(String sessionId) async {
-    final r = await _http.get(_u('/api/gameplay/$sessionId/events'), headers: _jsonHeaders);
+    final r = await _http.get(
+      _u('/api/gameplay/$sessionId/events'),
+      headers: _jsonHeaders,
+    );
     return _decodeList(r);
   }
 
   Future<Map<String, dynamic>> createLobby({
     required String name,
     required int maxPlayers,
-    required String hostDisplayName,
   }) async {
     final r = await _http.post(
       _u('/api/lobby'),
       headers: _jsonHeaders,
-      body: jsonEncode({
-        'name': name,
-        'maxPlayers': maxPlayers,
-        'hostDisplayName': hostDisplayName,
-      }),
+      body: jsonEncode({'name': name, 'maxPlayers': maxPlayers}),
     );
     return _decodeMap(r);
   }
 
-  Future<Map<String, dynamic>> joinLobby({
-    required String code,
-    required String displayName,
-  }) async {
+  Future<Map<String, dynamic>> joinLobby({required String code}) async {
     final r = await _http.post(
       _u('/api/lobby/join'),
       headers: _jsonHeaders,
-      body: jsonEncode({
-        'code': code,
-        'displayName': displayName,
-      }),
+      body: jsonEncode({'code': code}),
     );
     return _decodeMap(r);
   }
@@ -178,11 +204,17 @@ class ApiClient {
   }
 
   Future<List<dynamic>> listLobbies({int limit = 20}) async {
-    final r = await _http.get(_u('/api/lobby?limit=$limit'), headers: _jsonHeaders);
+    final r = await _http.get(
+      _u('/api/lobby?limit=$limit'),
+      headers: _jsonHeaders,
+    );
     return _decodeList(r);
   }
 
-  Future<Map<String, dynamic>> startLobbyMatch(String code, {String name = 'Game'}) async {
+  Future<Map<String, dynamic>> startLobbyMatch(
+    String code, {
+    String name = 'Game',
+  }) async {
     final r = await _http.post(
       _u('/api/lobby/$code/start'),
       headers: _jsonHeaders,
@@ -192,7 +224,10 @@ class ApiClient {
   }
 
   Future<void> leaveLobby(String code) async {
-    final r = await _http.post(_u('/api/lobby/$code/leave'), headers: _jsonHeaders);
+    final r = await _http.post(
+      _u('/api/lobby/$code/leave'),
+      headers: _jsonHeaders,
+    );
     _throwIfError(r);
   }
 

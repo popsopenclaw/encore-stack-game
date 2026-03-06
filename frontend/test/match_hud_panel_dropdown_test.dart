@@ -11,7 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   testWidgets(
-    'MatchHudPanel builds without dropdown assertion when roll contains duplicate faces',
+    'MatchHudPanel supports chip-based die selection when roll contains duplicate faces',
     (tester) async {
       SharedPreferences.setMockInitialValues({});
       final controller = _TestGameController(
@@ -48,17 +48,23 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: MatchHudPanel(controller: controller, onShowAudit: () {}),
-          ),
+          home: Scaffold(body: MatchHudPanel(controller: controller)),
         ),
       );
       await tester.pump();
 
       expect(tester.takeException(), isNull);
-      expect(find.byType(DropdownButtonFormField<String>), findsNWidgets(2));
+      expect(find.byType(DropdownButtonFormField<String>), findsNothing);
       expect(controller.availableColorDice, ['Orange', 'Blue']);
       expect(controller.availableNumberDice, ['Four', 'Two']);
+
+      await tester.tap(find.byKey(const ValueKey('color-die-Blue')));
+      await tester.pump();
+      expect(controller.selectedColorDie, 'Blue');
+
+      await tester.tap(find.byKey(const ValueKey('number-die-Two')));
+      await tester.pump();
+      expect(controller.selectedNumberDie, 'Two');
     },
   );
 }

@@ -19,7 +19,7 @@ public class AuthController(IAuthUseCase authUseCase) : ControllerBase
     public async Task<ActionResult<AuthResponse>> ExchangeGithubCode([FromBody] GithubExchangeRequest request, CancellationToken cancellationToken)
     {
         var result = await authUseCase.ExchangeGitHubCodeAsync(request.Code, cancellationToken);
-        var response = new AuthResponse(result.AccessToken, result.Username, result.Email, result.AvatarUrl);
+        var response = new AuthResponse(result.AccessToken, result.Username, result.Email, result.AvatarUrl, result.PlayerName);
         return Ok(response);
     }
 }

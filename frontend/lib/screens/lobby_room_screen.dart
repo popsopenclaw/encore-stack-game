@@ -25,7 +25,32 @@ class _LobbyRoomScreenState extends State<LobbyRoomScreen> {
   @override
   void initState() {
     super.initState();
-    lobbyController.refreshCurrentLobby();
+    _hydrateLobby();
+  }
+
+  Future<void> _hydrateLobby() async {
+    if (lobbyController.hasResumableCurrentGame) {
+      _openActiveMatch();
+      return;
+    }
+
+    await lobbyController.refreshCurrentLobby();
+    if (!mounted || !lobbyController.hasResumableCurrentGame) return;
+    _openActiveMatch();
+  }
+
+  void _openActiveMatch() {
+    final sessionId = lobbyController.activeSessionId;
+    if (sessionId == null || sessionId.isEmpty) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(
+        context,
+        AppRoutes.game,
+        arguments: sessionId,
+      );
+    });
   }
 
   Future<void> _startMatch() async {
@@ -39,11 +64,19 @@ class _LobbyRoomScreenState extends State<LobbyRoomScreen> {
 
     try {
       await lobbyController.refreshSessionConfig();
-      final api = ApiClient(baseUrl: lobbyController.backendUrl, jwt: lobbyController.jwt);
+      final api = ApiClient(
+        baseUrl: lobbyController.backendUrl,
+        jwt: lobbyController.jwt,
+      );
       final res = await api.startLobbyMatch(code, name: 'Lobby Match');
       final sessionId = (res['sessionId'] ?? '').toString();
+      lobbyController.markCurrentLobbyStarted(sessionId);
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, AppRoutes.game, arguments: sessionId);
+      Navigator.pushReplacementNamed(
+        context,
+        AppRoutes.game,
+        arguments: sessionId,
+      );
     } on ApiErrorException catch (e) {
       setState(() => _error = e.message);
     } catch (e) {
@@ -58,7 +91,9 @@ class _LobbyRoomScreenState extends State<LobbyRoomScreen> {
     if (code == null || code.isEmpty) return;
     await Clipboard.setData(ClipboardData(text: code));
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lobby code copied')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Lobby code copied')));
   }
 
   @override
@@ -67,61 +102,91 @@ class _LobbyRoomScreenState extends State<LobbyRoomScreen> {
       animation: lobbyController,
       builder: (context, _) {
         final members = lobbyController.members;
-        final name = lobbyController.lobbyName.isEmpty ? 'Untitled Lobby' : lobbyController.lobbyName;
+        final name =
+            lobbyController.lobbyName.isEmpty
+                ? 'Untitled Lobby'
+                : lobbyController.lobbyName;
         final code = lobbyController.lobbyCode ?? '-';
         final isHost = lobbyController.isCurrentUserHost;
         final myId = lobbyController.currentAccountId;
-        final myReady = myId != null ? (lobbyController.readyByAccountId[myId] ?? false) : false;
+        final myReady =
+            myId != null
+                ? (lobbyController.readyByAccountId[myId] ?? false)
+                : false;
 
         return AppShell(
           title: 'Lobby Room',
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 980),
+              constraints: const BoxConstraints(maxWidth: 1180),
               child: Column(
                 children: [
                   AppPanel(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(name, style: AppTextStyles.boardLabel.copyWith(color: AppPalette.textPrimary, fontSize: 30)),
+                        Text(
+                          name,
+                          style: AppTextStyles.title.copyWith(fontSize: 30),
+                        ),
                         const SizedBox(height: AppSpacing.sm),
                         Wrap(
                           spacing: AppSpacing.sm,
-                          runSpacing: AppSpacing.sm,
+                          runSpacing: AppSpacing.xs,
                           children: [
-                            _pill('CODE', code, emphasize: true),
-                            AppMetaPill(text: 'Players ${members.length}/${lobbyController.maxPlayers}'),
-                            AppMetaPill(text: _busy ? 'Starting...' : 'Waiting in lobby'),
-                            AppMetaPill(text: isHost ? 'You are host' : 'Waiting for host'),
+                            AppMetaPill(text: 'CODE $code', emphasis: true),
+                            AppMetaPill(
+                              text:
+                                  'Players ${members.length}/${lobbyController.maxPlayers}',
+                            ),
+                            AppMetaPill(
+                              text: _busy ? 'Starting...' : 'Waiting in lobby',
+                            ),
+                            AppMetaPill(
+                              text:
+                                  isHost ? 'You are host' : 'Waiting for host',
+                            ),
                           ],
                         ),
                         const SizedBox(height: AppSpacing.md),
-                        Row(
+                        Wrap(
+                          spacing: AppSpacing.sm,
+                          runSpacing: AppSpacing.xs,
                           children: [
                             Tooltip(
-                              message: isHost ? 'Start when everyone is ready' : 'Only host can start the match',
+                              message:
+                                  isHost
+                                      ? 'Start when everyone is ready'
+                                      : 'Only host can start the match',
                               child: FilledButton.icon(
-                                onPressed: (_busy || !isHost) ? null : _startMatch,
+                                onPressed:
+                                    (_busy || !isHost) ? null : _startMatch,
                                 icon: const Icon(Icons.play_arrow),
-                                label: Text(_busy ? 'Starting match...' : 'Start Match'),
+                                label: Text(
+                                  _busy ? 'Starting match...' : 'Start Match',
+                                ),
                               ),
                             ),
-                            const SizedBox(width: AppSpacing.sm),
                             FilledButton.tonalIcon(
-                              onPressed: _busy ? null : lobbyController.toggleMyReady,
-                              icon: Icon(myReady ? Icons.check_circle : Icons.radio_button_unchecked),
+                              onPressed:
+                                  _busy ? null : lobbyController.toggleMyReady,
+                              icon: Icon(
+                                myReady
+                                    ? Icons.check_circle
+                                    : Icons.radio_button_unchecked,
+                              ),
                               label: Text(myReady ? 'Ready' : 'Mark Ready'),
                             ),
-                            const SizedBox(width: AppSpacing.sm),
                             OutlinedButton.icon(
                               onPressed: _copyCode,
                               icon: const Icon(Icons.copy),
                               label: const Text('Copy Code'),
                             ),
-                            const SizedBox(width: AppSpacing.sm),
                             OutlinedButton.icon(
-                              onPressed: _busy ? null : lobbyController.refreshCurrentLobby,
+                              onPressed:
+                                  _busy
+                                      ? null
+                                      : lobbyController.refreshCurrentLobby,
                               icon: const Icon(Icons.refresh),
                               label: const Text('Refresh'),
                             ),
@@ -132,92 +197,35 @@ class _LobbyRoomScreenState extends State<LobbyRoomScreen> {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Expanded(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: CommonCard(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Players', style: AppTextStyles.title),
-                                const SizedBox(height: AppSpacing.sm),
-                                Expanded(
-                                  child: members.isEmpty
-                                      ? const Center(child: Text('No players joined yet.'))
-                                      : ListView.separated(
-                                          itemCount: members.length,
-                                          separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.xs),
-                                          itemBuilder: (context, i) {
-                                            final m = members[i];
-                                            final host = m['isHost'] as bool? ?? false;
-                                            final ready = m['isReady'] as bool? ?? false;
-                                            return Container(
-                                              decoration: BoxDecoration(
-                                                color: host ? AppPalette.hostHighlightBg : AppPalette.cardBg,
-                                                borderRadius: BorderRadius.circular(10),
-                                                border: Border.all(color: AppPalette.borderLight),
-                                              ),
-                                              child: ListTile(
-                                                dense: true,
-                                                leading: CircleAvatar(
-                                                  backgroundColor: host ? AppPalette.tileOrange : AppPalette.tileBlue,
-                                                  child: Text((m['displayName']?.toString() ?? '?').substring(0, 1).toUpperCase()),
-                                                ),
-                                                title: Text(m['displayName']?.toString() ?? 'Player'),
-                                                trailing: Wrap(
-                                                  spacing: AppSpacing.xs,
-                                                  children: [
-                                                    if (host)
-                                                      Container(
-                                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                        decoration: BoxDecoration(
-                                                          color: AppPalette.boardFrame,
-                                                          borderRadius: BorderRadius.circular(999),
-                                                        ),
-                                                        child: const Text('HOST', style: TextStyle(color: AppPalette.textOnDark, fontWeight: FontWeight.w700, fontSize: 11)),
-                                                      ),
-                                                    Container(
-                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                      decoration: BoxDecoration(
-                                                        color: ready ? AppPalette.success.withValues(alpha: 0.25) : AppPalette.cardBg,
-                                                        borderRadius: BorderRadius.circular(999),
-                                                        border: Border.all(color: AppPalette.borderLight),
-                                                      ),
-                                                      child: Text(ready ? 'READY' : 'NOT READY', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11)),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                ),
-                              ],
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final compact = constraints.maxWidth < 900;
+                        if (compact) {
+                          return ListView(
+                            children: [
+                              SizedBox(
+                                height: 420,
+                                child: _PlayersPanel(members: members),
+                              ),
+                              const SizedBox(height: AppSpacing.md),
+                              _RulesPanel(error: _error),
+                            ],
+                          );
+                        }
+                        return Row(
+                          children: [
+                            Expanded(
+                              flex: 7,
+                              child: _PlayersPanel(members: members),
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: CommonCard(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('How this works', style: AppTextStyles.title),
-                                const SizedBox(height: AppSpacing.sm),
-                                const Text('1) Share the lobby code'),
-                                const SizedBox(height: AppSpacing.xs),
-                                const Text('2) Wait for players to join'),
-                                const SizedBox(height: AppSpacing.xs),
-                                const Text('3) Start Match when everyone is ready'),
-                                const Spacer(),
-                                if (_error != null)
-                                  Text(_error!, style: const TextStyle(color: AppPalette.danger)),
-                              ],
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              flex: 4,
+                              child: _RulesPanel(error: _error),
                             ),
-                          ),
-                        ),
-                      ],
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -228,23 +236,157 @@ class _LobbyRoomScreenState extends State<LobbyRoomScreen> {
       },
     );
   }
+}
 
-  Widget _pill(String label, String value, {bool emphasize = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: emphasize ? AppPalette.white : AppPalette.cardBg,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppPalette.borderLight),
+class _PlayersPanel extends StatelessWidget {
+  const _PlayersPanel({required this.members});
+
+  final List<Map<String, dynamic>> members;
+
+  @override
+  Widget build(BuildContext context) {
+    return CommonCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Players', style: AppTextStyles.title),
+          const SizedBox(height: AppSpacing.sm),
+          Expanded(
+            child:
+                members.isEmpty
+                    ? const Center(child: Text('No players joined yet.'))
+                    : ListView.separated(
+                      itemCount: members.length,
+                      separatorBuilder:
+                          (_, __) => const SizedBox(height: AppSpacing.xs),
+                      itemBuilder: (context, i) {
+                        final m = members[i];
+                        final host = m['isHost'] as bool? ?? false;
+                        final ready = m['isReady'] as bool? ?? false;
+                        final displayName =
+                            (m['displayName']?.toString() ?? 'Player');
+
+                        return Container(
+                          decoration: BoxDecoration(
+                            color:
+                                host
+                                    ? AppPalette.hostHighlightBg
+                                    : AppPalette.surfaceInset,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppPalette.borderLight),
+                          ),
+                          child: ListTile(
+                            dense: true,
+                            leading: CircleAvatar(
+                              backgroundColor:
+                                  host
+                                      ? AppPalette.tileOrange
+                                      : AppPalette.tileBlue,
+                              child: Text(
+                                displayName.substring(0, 1).toUpperCase(),
+                              ),
+                            ),
+                            title: Text(displayName),
+                            trailing: Wrap(
+                              spacing: AppSpacing.xs,
+                              children: [
+                                if (host)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppPalette.surfaceRaised,
+                                      borderRadius: BorderRadius.circular(999),
+                                      border: Border.all(
+                                        color: AppPalette.borderLight,
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'HOST',
+                                      style: TextStyle(
+                                        color: AppPalette.textOnDark,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        ready
+                                            ? AppPalette.success.withValues(
+                                              alpha: 0.2,
+                                            )
+                                            : AppPalette.surfaceRaised,
+                                    borderRadius: BorderRadius.circular(999),
+                                    border: Border.all(
+                                      color: AppPalette.borderLight,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    ready ? 'READY' : 'NOT READY',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+          ),
+        ],
       ),
-      child: RichText(
-        text: TextSpan(
-          style: const TextStyle(color: AppPalette.textPrimary),
-          children: [
-            TextSpan(text: '$label  ', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 11)),
-            TextSpan(text: value, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
-          ],
-        ),
+    );
+  }
+}
+
+class _RulesPanel extends StatelessWidget {
+  const _RulesPanel({required this.error});
+
+  final String? error;
+
+  @override
+  Widget build(BuildContext context) {
+    return CommonCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Ready Check Protocol', style: AppTextStyles.title),
+          const SizedBox(height: AppSpacing.sm),
+          const Text(
+            '1) Share the lobby code with players.',
+            style: AppTextStyles.body,
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          const Text(
+            '2) Everyone joins and marks ready.',
+            style: AppTextStyles.body,
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          const Text(
+            '3) Host starts match when all are ready.',
+            style: AppTextStyles.body,
+          ),
+          const Spacer(),
+          if (error != null)
+            Text(
+              error!,
+              style: const TextStyle(
+                color: AppPalette.danger,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+        ],
       ),
     );
   }

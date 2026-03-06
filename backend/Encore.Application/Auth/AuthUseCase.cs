@@ -12,6 +12,6 @@ public class AuthUseCase(IAuthGateway authGateway, ITokenIssuer tokenIssuer) : I
     {
         var account = await authGateway.ExchangeCodeAndUpsertAsync(code, cancellationToken);
         var token = tokenIssuer.CreateToken(account);
-        return new AuthResponse(token, account.Username, account.Email, account.AvatarUrl);
+        return new AuthResponse(token, account.Username, account.Email, account.AvatarUrl, account.PlayerName);
     }
 }

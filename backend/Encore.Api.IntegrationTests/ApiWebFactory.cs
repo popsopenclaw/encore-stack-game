@@ -3,6 +3,7 @@ using Encore.Api.IntegrationTests.Fakes;
 using Encore.Application.Auth;
 using Encore.Application.Gameplay;
 using Encore.Application.Lobby;
+using Encore.Application.Profile;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -33,10 +34,12 @@ public class ApiWebFactory : WebApplicationFactory<Program>
             services.AddSingleton<FakeAuthUseCase>();
             services.AddSingleton<FakeGameplayUseCase>();
             services.AddSingleton<FakeLobbyUseCase>();
+            services.AddSingleton<FakeProfileUseCase>();
 
             services.AddSingleton<IAuthUseCase>(sp => sp.GetRequiredService<FakeAuthUseCase>());
             services.AddSingleton<IGameplayUseCase>(sp => sp.GetRequiredService<FakeGameplayUseCase>());
             services.AddSingleton<ILobbyUseCase>(sp => sp.GetRequiredService<FakeLobbyUseCase>());
+            services.AddSingleton<IProfileUseCase>(sp => sp.GetRequiredService<FakeProfileUseCase>());
         });
     }
 
