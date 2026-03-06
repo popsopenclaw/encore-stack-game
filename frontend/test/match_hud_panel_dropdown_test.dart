@@ -48,13 +48,16 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(body: MatchHudPanel(controller: controller)),
+          home: Scaffold(
+            body: MatchHudPanel(controller: controller, onOpenTimeline: () {}),
+          ),
         ),
       );
       await tester.pump();
 
       expect(tester.takeException(), isNull);
       expect(find.byType(DropdownButtonFormField<String>), findsNothing);
+      expect(find.text('Open Scores / Timeline'), findsOneWidget);
       expect(controller.availableColorDice, ['Orange', 'Blue']);
       expect(controller.availableNumberDice, ['Four', 'Two']);
 

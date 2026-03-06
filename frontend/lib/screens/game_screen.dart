@@ -13,7 +13,9 @@ import '../widgets/game_audit_panel.dart';
 import '../widgets/match_hud_panel.dart';
 
 class GameScreen extends StatefulWidget {
-  const GameScreen({super.key});
+  const GameScreen({super.key, this.controllerOverride});
+
+  final GameController? controllerOverride;
 
   @override
   State<GameScreen> createState() => _GameScreenState();
@@ -22,12 +24,14 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> {
   late final GameController controller;
   late final Future<void> _controllerInit;
+  late final bool _ownsController;
   bool _sessionHydrated = false;
 
   @override
   void initState() {
     super.initState();
-    controller = GameController();
+    controller = widget.controllerOverride ?? GameController();
+    _ownsController = widget.controllerOverride == null;
     _controllerInit = controller.init();
   }
 
@@ -64,8 +68,10 @@ class _GameScreenState extends State<GameScreen> {
 
   @override
   void dispose() {
-    controller.disposeController();
-    controller.dispose();
+    if (_ownsController) {
+      controller.disposeController();
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -165,6 +171,8 @@ class _GameScreenState extends State<GameScreen> {
                       : LayoutBuilder(
                         builder: (context, constraints) {
                           final wide = constraints.maxWidth > 1150;
+                          final stackedBoardHeight =
+                              constraints.maxHeight.clamp(520.0, 760.0);
                           final boardPanel = CommonCard(
                             padding: const EdgeInsets.all(AppSpacing.sm),
                             child: BoardSheet(
@@ -189,7 +197,10 @@ class _GameScreenState extends State<GameScreen> {
                           if (!wide) {
                             return ListView(
                               children: [
-                                boardPanel,
+                                SizedBox(
+                                  height: stackedBoardHeight,
+                                  child: boardPanel,
+                                ),
                                 const SizedBox(height: AppSpacing.sm),
                                 MatchHudPanel(
                                   controller: controller,
