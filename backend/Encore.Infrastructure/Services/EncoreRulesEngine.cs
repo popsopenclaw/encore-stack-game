@@ -107,6 +107,7 @@ public class EncoreRulesEngine(BoardTemplateProvider templates) : IGameRulesEngi
     public void EnableEncore(GameState state)
     {
         if (!state.EndTriggered) throw new InvalidOperationException("Encore can only be enabled after game-end trigger.");
+        if (!state.IsFinished) throw new InvalidOperationException("Encore can only be enabled after the triggering turn is complete.");
         if (state.EncoreEnabled) throw new InvalidOperationException("Encore already enabled.");
 
         state.EncoreEnabled = true;
@@ -127,7 +128,7 @@ public class EncoreRulesEngine(BoardTemplateProvider templates) : IGameRulesEngi
 
     public List<object> CalculateScores(GameState state)
     {
-        var result = new List<object>();
+        var rows = new List<ScoreRow>();
 
         foreach (var pair in state.Players.Select((p, i) => new { p, i }))
         {
@@ -136,30 +137,59 @@ public class EncoreRulesEngine(BoardTemplateProvider templates) : IGameRulesEngi
             var colPts = p.CompletedColumns.Sum(c =>
             {
                 var pts = state.ColumnPoints[c];
-                return state.ColumnFirstClaimByPlayerIndex.TryGetValue(c, out var owner) && owner == pair.i ? pts.first : pts.later;
+                return IsFirstColumnClaimer(state, c, pair.i) ? pts.first : pts.later;
             });
 
             var colorPts = p.CompletedColors.Sum(color =>
             {
                 var pts = state.ColorCompletionPoints[color];
-                return state.ColorFirstClaimByPlayerIndex.TryGetValue(color, out var owner) && owner == pair.i ? pts.first : pts.later;
+                return IsFirstColorClaimer(state, color, pair.i) ? pts.first : pts.later;
             });
 
             var jokerBonus = p.JokerMarksRemaining;
             var uncheckedStars = state.Board.Count(c => c.Starred && !p.CheckedCells.Contains(c.Id));
-            var starPenalty = uncheckedStars * 2;
+            var starPenalty = Math.Min(uncheckedStars * 2, 30);
 
             var total = colPts + colorPts + jokerBonus - starPenalty;
 
+            rows.Add(new ScoreRow(
+                PlayerIndex: pair.i,
+                Player: p.Name,
+                Columns: colPts,
+                Colors: colorPts,
+                JokerBonus: jokerBonus,
+                StarPenalty: starPenalty,
+                Total: total));
+        }
+
+        var rankingKeys = rows
+            .Select(r => (r.Total, r.JokerBonus))
+            .Distinct()
+            .OrderByDescending(k => k.Total)
+            .ThenByDescending(k => k.JokerBonus)
+            .ToList();
+
+        var top = rankingKeys.FirstOrDefault();
+        var topExists = rankingKeys.Count > 0;
+
+        var result = new List<object>(rows.Count);
+        foreach (var row in rows)
+        {
+            var rank = rankingKeys.FindIndex(k => k == (row.Total, row.JokerBonus)) + 1;
+            var isWinner = topExists && (row.Total, row.JokerBonus) == top;
+
             result.Add(new
             {
-                playerIndex = pair.i,
-                player = p.Name,
-                columns = colPts,
-                colors = colorPts,
-                jokerBonus,
-                starPenalty,
-                total
+                playerIndex = row.PlayerIndex,
+                player = row.Player,
+                columns = row.Columns,
+                colors = row.Colors,
+                jokerBonus = row.JokerBonus,
+                tiebreakExclamationMarks = row.JokerBonus,
+                starPenalty = row.StarPenalty,
+                total = row.Total,
+                rank,
+                isWinner
             });
         }
 
@@ -169,6 +199,9 @@ public class EncoreRulesEngine(BoardTemplateProvider templates) : IGameRulesEngi
     private void ValidateAndApplyPlacement(GameState state, MoveRequest move)
     {
         if (move.PlayerIndex < 0 || move.PlayerIndex >= state.Players.Count) throw new InvalidOperationException("Invalid player.");
+        if (move.CellIds.Count == 0) throw new InvalidOperationException("At least one cell must be checked when not passing.");
+        if (move.CellIds.Count != move.CellIds.Distinct(StringComparer.Ordinal).Count())
+            throw new InvalidOperationException("A move cannot include the same cell more than once.");
 
         var p = state.Players[move.PlayerIndex];
         var targetColor = move.ColorDie == ColorDieFace.Joker ? ResolveColorFromCells(state, move.CellIds) : (CellColor)move.ColorDie;
@@ -208,8 +241,6 @@ public class EncoreRulesEngine(BoardTemplateProvider templates) : IGameRulesEngi
             state.EndTriggered = true;
             state.EndTriggeredByPlayer = move.PlayerIndex;
             p.TriggeredGameEnd = true;
-            state.IsFinished = true;
-            state.Phase = TurnPhase.Finished;
             LogEvent(state, "end-triggered", move.PlayerIndex);
         }
     }
@@ -223,6 +254,14 @@ public class EncoreRulesEngine(BoardTemplateProvider templates) : IGameRulesEngi
         state.Turn++;
         state.ActivePlayerIndex = (state.ActivePlayerIndex + 1) % state.Players.Count;
         if (state.InitialOpenDraftTurnsRemaining > 0) state.InitialOpenDraftTurnsRemaining--;
+
+        if (state.EndTriggered && !state.EncoreEnabled)
+        {
+            state.IsFinished = true;
+            state.Phase = TurnPhase.Finished;
+            LogEvent(state, "game-finished");
+            return;
+        }
 
         if (state.EndTriggered && state.EncoreEnabled)
         {
@@ -251,6 +290,14 @@ public class EncoreRulesEngine(BoardTemplateProvider templates) : IGameRulesEngi
         state.Turn++;
         state.ActivePlayerIndex = (state.ActivePlayerIndex + 1) % state.Players.Count;
         if (state.InitialOpenDraftTurnsRemaining > 0) state.InitialOpenDraftTurnsRemaining--;
+
+        if (state.EndTriggered && !state.EncoreEnabled)
+        {
+            state.IsFinished = true;
+            state.Phase = TurnPhase.Finished;
+            LogEvent(state, "game-finished");
+            return;
+        }
     }
 
     private static (List<ColorDieFace> colorDice, List<NumberDieFace> numberDice) GetAvailableFromRoll(DiceRoll roll)
@@ -329,6 +376,20 @@ public class EncoreRulesEngine(BoardTemplateProvider templates) : IGameRulesEngi
                 p.CompletedColumns.Add(col.Key);
                 if (!state.ColumnFirstClaimByPlayerIndex.ContainsKey(col.Key))
                     state.ColumnFirstClaimByPlayerIndex[col.Key] = playerIndex;
+
+                if (!state.ColumnFirstClaimByPlayerIndices.TryGetValue(col.Key, out var firstClaimers))
+                {
+                    firstClaimers = [];
+                    if (state.ColumnFirstClaimByPlayerIndex.TryGetValue(col.Key, out var owner))
+                        firstClaimers.Add(owner);
+                    state.ColumnFirstClaimByPlayerIndices[col.Key] = firstClaimers;
+                }
+
+                if (!state.ColumnFirstClaimTurn.ContainsKey(col.Key))
+                    state.ColumnFirstClaimTurn[col.Key] = state.Turn;
+
+                if (state.ColumnFirstClaimTurn[col.Key] == state.Turn)
+                    firstClaimers.Add(playerIndex);
             }
         }
 
@@ -341,8 +402,38 @@ public class EncoreRulesEngine(BoardTemplateProvider templates) : IGameRulesEngi
                 p.CompletedColors.Add(color);
                 if (!state.ColorFirstClaimByPlayerIndex.ContainsKey(color))
                     state.ColorFirstClaimByPlayerIndex[color] = playerIndex;
+
+                if (!state.ColorFirstClaimByPlayerIndices.TryGetValue(color, out var firstClaimers))
+                {
+                    firstClaimers = [];
+                    if (state.ColorFirstClaimByPlayerIndex.TryGetValue(color, out var owner))
+                        firstClaimers.Add(owner);
+                    state.ColorFirstClaimByPlayerIndices[color] = firstClaimers;
+                }
+
+                if (!state.ColorFirstClaimTurn.ContainsKey(color))
+                    state.ColorFirstClaimTurn[color] = state.Turn;
+
+                if (state.ColorFirstClaimTurn[color] == state.Turn)
+                    firstClaimers.Add(playerIndex);
             }
         }
+    }
+
+    private static bool IsFirstColumnClaimer(GameState state, string column, int playerIndex)
+    {
+        if (state.ColumnFirstClaimByPlayerIndices.TryGetValue(column, out var firstClaimers))
+            return firstClaimers.Contains(playerIndex);
+
+        return state.ColumnFirstClaimByPlayerIndex.TryGetValue(column, out var owner) && owner == playerIndex;
+    }
+
+    private static bool IsFirstColorClaimer(GameState state, CellColor color, int playerIndex)
+    {
+        if (state.ColorFirstClaimByPlayerIndices.TryGetValue(color, out var firstClaimers))
+            return firstClaimers.Contains(playerIndex);
+
+        return state.ColorFirstClaimByPlayerIndex.TryGetValue(color, out var owner) && owner == playerIndex;
     }
 
     private static Dictionary<string, (int first, int later)> BuildColumnPoints()
@@ -412,4 +503,13 @@ public class EncoreRulesEngine(BoardTemplateProvider templates) : IGameRulesEngi
         if (state.Events.Count > 400)
             state.Events = state.Events.Skip(state.Events.Count - 400).ToList();
     }
+
+    private sealed record ScoreRow(
+        int PlayerIndex,
+        string Player,
+        int Columns,
+        int Colors,
+        int JokerBonus,
+        int StarPenalty,
+        int Total);
 }

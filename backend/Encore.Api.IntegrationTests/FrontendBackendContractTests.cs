@@ -57,11 +57,33 @@ public class FrontendBackendContractTests : IClassFixture<ApiWebFactory>
         var scorePayload = await score.Content.ReadFromJsonAsync<List<Dictionary<string, object>>>();
         Assert.NotNull(scorePayload);
         Assert.NotEmpty(scorePayload!);
+        Assert.True(scorePayload![0].ContainsKey("isWinner"));
+        Assert.True(scorePayload[0].ContainsKey("rank"));
+        Assert.True(scorePayload[0].ContainsKey("tiebreakExclamationMarks"));
 
         var eventsRes = await _client.GetAsync("/api/gameplay/test-session/events");
         eventsRes.EnsureSuccessStatusCode();
         var eventsPayload = await eventsRes.Content.ReadFromJsonAsync<List<TurnEvent>>();
         Assert.NotNull(eventsPayload);
         Assert.NotEmpty(eventsPayload!);
+    }
+
+    [Fact]
+    public async Task GameplayActiveSelect_Contract_AcceptsStringEnums()
+    {
+        var response = await _client.PostAsJsonAsync(
+            "/api/gameplay/test-session/active-select",
+            new
+            {
+                playerIndex = 0,
+                colorDie = "Blue",
+                numberDie = "Three",
+                pass = false
+            });
+
+        response.EnsureSuccessStatusCode();
+        var state = await response.Content.ReadFromJsonAsync<GameState>();
+        Assert.NotNull(state);
+        Assert.Equal("test-session", state!.SessionId);
     }
 }

@@ -35,7 +35,20 @@ public class FakeGameplayUseCase : IGameplayUseCase
         => Task.FromResult(new GameState { SessionId = sessionId, Board = [] });
 
     public Task<List<object>?> ScoreAsync(string sessionId, CancellationToken cancellationToken = default)
-        => Task.FromResult<List<object>?>([new { player = "tester", total = 0 }]);
+        => Task.FromResult<List<object>?>([
+            new
+            {
+                player = "tester",
+                columns = 0,
+                colors = 0,
+                jokerBonus = 8,
+                tiebreakExclamationMarks = 8,
+                starPenalty = 0,
+                total = 8,
+                rank = 1,
+                isWinner = true
+            }
+        ]);
 
     public Task<List<TurnEvent>?> EventsAsync(string sessionId, CancellationToken cancellationToken = default)
         => Task.FromResult<List<TurnEvent>?>([new TurnEvent { Turn = 1, Type = "roll" }]);

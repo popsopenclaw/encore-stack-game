@@ -130,8 +130,8 @@ Gameplay (Bearer JWT):
 - `POST /api/gameplay/{sessionId}/active-select` -> active picks dice (or pass)
 - `GET /api/gameplay/{sessionId}/available-dice/{playerIndex}` -> dice available for that player this turn
 - `POST /api/gameplay/{sessionId}/action` -> player submits move (or pass)
-- `POST /api/gameplay/{sessionId}/encore` -> enables one extra round after end trigger
-- `GET /api/gameplay/{sessionId}/score` -> score breakdown
+- `POST /api/gameplay/{sessionId}/encore` -> enables one extra round after the end-triggering turn has fully resolved
+- `GET /api/gameplay/{sessionId}/score` -> score breakdown (includes `rank`, `isWinner`, and `tiebreakExclamationMarks`)
 - `GET /api/gameplay/{sessionId}/events` -> turn/audit timeline
 
 Lobby + realtime (Bearer JWT):
@@ -166,5 +166,6 @@ Legacy session endpoints (still available):
 ## Notes
 
 - This scaffold targets mobile + native desktop only (no web build requested).
+- Multiplayer rules are implemented in backend gameplay; solo-mode-specific Encore score-sheet rules are not currently modeled in API state.
 - EF Core uses migrations (see `backend/Encore.Infrastructure/Data/Migrations`) and they are applied by the compose `migrate` service.
 - Session values in Valkey expire after 7 days by default.

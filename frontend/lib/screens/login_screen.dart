@@ -7,6 +7,9 @@ import '../app/router.dart';
 import '../config/backend_config.dart';
 import '../services/api_client.dart';
 import '../state/auth_session_controller.dart';
+import '../theme/app_palette.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_text_styles.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/common_card.dart';
 
@@ -52,9 +55,10 @@ class _LoginScreenState extends State<LoginScreen> {
       final uri = Uri.parse(url);
       final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
       setState(() {
-        _status = opened
-            ? 'GitHub opened in browser. After authorize, paste the returned code below.'
-            : 'Could not open browser automatically. Use the URL below manually.';
+        _status =
+            opened
+                ? 'GitHub opened in browser. After authorize, paste the returned code below.'
+                : 'Could not open browser automatically. Use the URL below manually.';
       });
     } on ApiErrorException catch (e) {
       setState(() => _status = 'OAuth URL failed: ${e.message}');
@@ -108,36 +112,40 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Icon(Icons.lock_outline, size: 42),
-                const SizedBox(height: 10),
-                const Text('Login with GitHub OAuth to continue'),
-                const SizedBox(height: 12),
-                ElevatedButton.icon(
+                const Icon(Icons.lock_outline, size: 38),
+                const SizedBox(height: AppSpacing.sm),
+                const Text(
+                  'Login with GitHub OAuth to continue',
+                  style: AppTextStyles.subtitle,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                FilledButton.icon(
                   onPressed: _busy ? null : _startOAuth,
                   icon: const Icon(Icons.open_in_browser),
                   label: const Text('Start GitHub OAuth'),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 TextField(
                   controller: _codeController,
                   decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
                     labelText: 'OAuth code',
                     hintText: 'Paste code from callback URL',
                   ),
                 ),
-                const SizedBox(height: 8),
-                ElevatedButton.icon(
+                const SizedBox(height: AppSpacing.sm),
+                FilledButton.icon(
                   onPressed: _busy ? null : _exchangeCode,
                   icon: const Icon(Icons.login),
                   label: const Text('Complete Login'),
                 ),
                 if (_lastAuthUrl != null) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   SelectableText(_lastAuthUrl!),
                   TextButton.icon(
                     onPressed: () async {
-                      await Clipboard.setData(ClipboardData(text: _lastAuthUrl!));
+                      await Clipboard.setData(
+                        ClipboardData(text: _lastAuthUrl!),
+                      );
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Auth URL copied')),
@@ -147,8 +155,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     label: const Text('Copy auth URL'),
                   ),
                 ],
-                const SizedBox(height: 8),
-                Text(_status),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  _status,
+                  style: const TextStyle(color: AppPalette.textMuted),
+                ),
               ],
             ),
           ),

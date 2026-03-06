@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 
 class AppPalette {
-  static const scaffoldBg = Color(0xFFEFE9D8);
-  static const appBarBg = Color(0xFFD8CCB1);
-  static const cardBg = Color(0xFFFFFAEE);
+  static const scaffoldBg = Color(0xFFE7DEC8);
+  static const appBarBg = Color(0xFF1E1E1E);
+  static const cardBg = Color(0xFFF5ECD7);
+  static const surfaceRaised = Color(0xFFFFF8E9);
+  static const surfaceInset = Color(0xFFE0D4BA);
+  static const surfaceTint = Color(0xFFCEC1A5);
+  static const inkAccent = Color(0xFF2D5D61);
 
   static const boardFrame = Color(0xFF202020);
   static const boardFrameShadow = Color(0x8A000000);
@@ -18,10 +22,11 @@ class AppPalette {
 
   static const white = Colors.white;
   static const black = Colors.black;
-  static const red = Colors.red;
+  static const red = Color(0xFFD72D36);
   static const grey = Colors.grey;
 
   static const textPrimary = Color(0xFF1E1E1E);
+  static const textMuted = Color(0xFF4D4A43);
   static const textOnDark = Color(0xFFF5F5F5);
   static const borderLight = Color(0x42000000);
   static const borderDark = Color(0x8A000000);

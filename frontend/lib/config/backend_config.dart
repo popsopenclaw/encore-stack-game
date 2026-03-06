@@ -5,3 +5,4 @@ const kBackendUrlFromBuild = String.fromEnvironment(
 
 const kBackendPrefKey = 'backend_url';
 const kJwtPrefKey = 'jwt_token';
+const kActiveGameSessionPrefKey = 'active_game_session_id';

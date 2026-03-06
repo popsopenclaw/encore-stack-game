@@ -16,9 +16,12 @@ This is the API order for one complete turn:
 
 - First 3 active turns: all players use all 6 dice.
 - Afterwards: active selected pair is removed for non-active players.
+- If active player passes, all players may still choose from all 6 dice that turn.
 - Number joker resolves only to 1..5.
 - Start must touch column H.
-- Scoring endpoint: `GET /api/gameplay/{sessionId}/score`.
+- When a player triggers game-end (second completed color), remaining players still resolve that same turn. The session becomes `Finished` at turn end.
+- `/encore` is only valid after that triggering turn has fully resolved.
+- Scoring endpoint: `GET /api/gameplay/{sessionId}/score` (row fields include `rank`, `isWinner`, `tiebreakExclamationMarks`).
 - Events timeline endpoint: `GET /api/gameplay/{sessionId}/events`.
 
 ## Lobby + realtime flow

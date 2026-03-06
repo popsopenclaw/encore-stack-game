@@ -4,6 +4,7 @@ import '../app/router.dart';
 import '../state/lobby_controller.dart';
 import '../theme/app_palette.dart';
 import '../theme/app_spacing.dart';
+import '../theme/app_text_styles.dart';
 import '../widgets/app_shell.dart';
 import '../widgets/common_card.dart';
 
@@ -74,34 +75,39 @@ class _CreateLobbyScreenState extends State<CreateLobbyScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Create a new multiplayer lobby', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                const Text(
+                  'Create a new multiplayer lobby',
+                  style: AppTextStyles.title,
+                ),
                 const SizedBox(height: AppSpacing.xs),
-                const Text('Set the basics and invite friends using the generated lobby code.'),
+                const Text(
+                  'Set the basics and invite friends using the generated lobby code.',
+                  style: AppTextStyles.bodyMuted,
+                ),
                 const SizedBox(height: AppSpacing.lg),
                 TextField(
                   controller: _name,
-                  decoration: const InputDecoration(
-                    labelText: 'Lobby name',
-                    border: OutlineInputBorder(),
-                  ),
+                  decoration: const InputDecoration(labelText: 'Lobby name'),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 TextField(
                   controller: _displayName,
                   decoration: const InputDecoration(
                     labelText: 'Your display name',
-                    border: OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                const Text('Max players'),
+                const Text('Max players', style: AppTextStyles.subtitle),
                 Slider(
                   value: _maxPlayers.toDouble(),
                   min: 2,
                   max: 6,
                   divisions: 4,
                   label: '$_maxPlayers',
-                  onChanged: _creating ? null : (v) => setState(() => _maxPlayers = v.round()),
+                  onChanged:
+                      _creating
+                          ? null
+                          : (v) => setState(() => _maxPlayers = v.round()),
                 ),
                 Align(
                   alignment: Alignment.centerRight,
@@ -109,13 +115,16 @@ class _CreateLobbyScreenState extends State<CreateLobbyScreen> {
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: AppSpacing.sm),
-                  Text(_error!, style: const TextStyle(color: AppPalette.danger)),
+                  Text(
+                    _error!,
+                    style: const TextStyle(color: AppPalette.danger),
+                  ),
                 ],
                 const SizedBox(height: AppSpacing.lg),
                 Row(
                   children: [
                     Expanded(
-                      child: ElevatedButton.icon(
+                      child: FilledButton.icon(
                         onPressed: _creating ? null : _create,
                         icon: const Icon(Icons.group_add),
                         label: Text(_creating ? 'Creating...' : 'Create Lobby'),

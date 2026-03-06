@@ -24,7 +24,11 @@ public class GameState
     public List<PlayerState> Players { get; set; } = [];
     public List<CellDef> Board { get; set; } = [];
     public Dictionary<string, int> ColumnFirstClaimByPlayerIndex { get; set; } = new();
+    public Dictionary<string, HashSet<int>> ColumnFirstClaimByPlayerIndices { get; set; } = new();
+    public Dictionary<string, int> ColumnFirstClaimTurn { get; set; } = new();
     public Dictionary<CellColor, int> ColorFirstClaimByPlayerIndex { get; set; } = new();
+    public Dictionary<CellColor, HashSet<int>> ColorFirstClaimByPlayerIndices { get; set; } = new();
+    public Dictionary<CellColor, int> ColorFirstClaimTurn { get; set; } = new();
     public Dictionary<string, (int first, int later)> ColumnPoints { get; set; } = new();
     public Dictionary<CellColor, (int first, int later)> ColorCompletionPoints { get; set; } = new();
 

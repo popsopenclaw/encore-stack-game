@@ -4,20 +4,38 @@ import '../theme/app_palette.dart';
 import '../theme/app_tokens.dart';
 
 class AppPanel extends StatelessWidget {
-  const AppPanel({super.key, required this.child, this.padding = const EdgeInsets.all(14)});
+  const AppPanel({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(14),
+  });
 
   final Widget child;
   final EdgeInsets padding;
 
   @override
   Widget build(BuildContext context) {
-    final surface = Theme.of(context).extension<AppSurface>() ?? AppSurface.standard;
-    final radius = Theme.of(context).extension<AppRadius>() ?? AppRadius.standard;
+    final surface =
+        Theme.of(context).extension<AppSurface>() ?? AppSurface.standard;
+    final radius =
+        Theme.of(context).extension<AppRadius>() ?? AppRadius.standard;
     return Container(
       decoration: BoxDecoration(
         color: surface.boardLikePanel,
         borderRadius: BorderRadius.circular(radius.panel),
-        boxShadow: const [BoxShadow(color: Color(0x22000000), blurRadius: 10, offset: Offset(0, 4))],
+        border: Border.all(color: AppPalette.borderLight),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x22000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+          BoxShadow(
+            color: Color(0x11FFFFFF),
+            blurRadius: 1,
+            offset: Offset(0, 1),
+          ),
+        ],
       ),
       padding: padding,
       child: child,
@@ -26,7 +44,12 @@ class AppPanel extends StatelessWidget {
 }
 
 class DieChip extends StatelessWidget {
-  const DieChip({super.key, required this.text, required this.bg, required this.fg});
+  const DieChip({
+    super.key,
+    required this.text,
+    required this.bg,
+    required this.fg,
+  });
 
   final String text;
   final Color bg;
@@ -34,14 +57,19 @@ class DieChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final radius =
+        Theme.of(context).extension<AppRadius>() ?? AppRadius.standard;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(radius.control),
         border: Border.all(color: AppPalette.borderDark),
       ),
-      child: Text(text, style: TextStyle(color: fg, fontWeight: FontWeight.w700)),
+      child: Text(
+        text,
+        style: TextStyle(color: fg, fontWeight: FontWeight.w800, fontSize: 12),
+      ),
     );
   }
 }
@@ -53,18 +81,22 @@ class AppMetaPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final radius = Theme.of(context).extension<AppRadius>() ?? AppRadius.standard;
-    final scheme = Theme.of(context).colorScheme;
+    final radius =
+        Theme.of(context).extension<AppRadius>() ?? AppRadius.standard;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(radius.pill),
-        border: Border.all(color: AppPalette.borderLight),
+        color: AppPalette.surfaceRaised,
+        borderRadius: BorderRadius.circular(radius.control),
+        border: Border.all(color: AppPalette.borderDark),
       ),
       child: Text(
         text,
-        style: TextStyle(color: scheme.onSurface, fontSize: 12, fontWeight: FontWeight.w600),
+        style: const TextStyle(
+          color: AppPalette.textPrimary,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

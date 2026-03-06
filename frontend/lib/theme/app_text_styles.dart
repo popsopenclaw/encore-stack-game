@@ -4,21 +4,20 @@ import 'app_palette.dart';
 
 class AppTextStyles {
   static const title = TextStyle(
-    fontSize: 20,
-    fontWeight: FontWeight.w700,
+    fontSize: 22,
+    fontWeight: FontWeight.w800,
     color: AppPalette.textPrimary,
   );
 
   static const subtitle = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.w500,
+    fontSize: 13,
+    fontWeight: FontWeight.w700,
     color: AppPalette.textPrimary,
   );
 
-  static const body = TextStyle(
-    fontSize: 13,
-    color: AppPalette.textPrimary,
-  );
+  static const body = TextStyle(fontSize: 13, color: AppPalette.textPrimary);
+
+  static const bodyMuted = TextStyle(fontSize: 12, color: AppPalette.textMuted);
 
   static const monoBadge = TextStyle(
     fontSize: 12,
