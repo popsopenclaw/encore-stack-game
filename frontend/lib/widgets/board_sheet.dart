@@ -425,83 +425,85 @@ class BoardGrid extends StatelessWidget {
                   final isChecked = checkedCellIds.contains(cellId);
                   final isSelected = selectedCellIds.contains(cellId);
                   final isBlocked = blockedCellIds.contains(cellId);
-                  final isTapEnabled = interactionEnabled && !isBlocked;
-                  final isReachable = reachableCellIds.isEmpty ||
+                  final isReachable =
+                      reachableCellIds.isEmpty ||
                       reachableCellIds.contains(cellId) ||
                       isChecked ||
                       isSelected;
+                  final isTapEnabled =
+                      interactionEnabled && !isBlocked && isReachable;
 
                   return Opacity(
                     opacity: isReachable ? 1.0 : 0.4,
                     child: GestureDetector(
-                    onTap: () {
-                      if (isTapEnabled) {
-                        onCellTap(cellId);
-                        return;
-                      }
-                      final hint = blockedTapHintForCell?.call(cellId);
-                      if (hint != null && hint.isNotEmpty) {
-                        onBlockedTapHint?.call(hint);
-                      }
-                    },
-                    child: Container(
-                      width: 30,
-                      height: 30,
-                      margin: const EdgeInsets.all(1.5),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            colorFor(
-                              (c['color'] as String),
-                            ).withValues(alpha: isChecked ? 1 : 0.94),
-                            colorFor(
-                              (c['color'] as String),
-                            ).withValues(alpha: isChecked ? 0.86 : 0.78),
+                      onTap: () {
+                        if (isTapEnabled) {
+                          onCellTap(cellId);
+                          return;
+                        }
+                        final hint = blockedTapHintForCell?.call(cellId);
+                        if (hint != null && hint.isNotEmpty) {
+                          onBlockedTapHint?.call(hint);
+                        }
+                      },
+                      child: Container(
+                        width: 30,
+                        height: 30,
+                        margin: const EdgeInsets.all(1.5),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              colorFor(
+                                (c['color'] as String),
+                              ).withValues(alpha: isChecked ? 1 : 0.94),
+                              colorFor(
+                                (c['color'] as String),
+                              ).withValues(alpha: isChecked ? 0.86 : 0.78),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(7),
+                          border: Border.all(
+                            color:
+                                isSelected
+                                    ? AppPalette.neonCyan
+                                    : isChecked
+                                    ? AppPalette.white
+                                    : AppPalette.white.withValues(alpha: 0.32),
+                            width: isSelected ? 2 : 1,
+                          ),
+                          boxShadow: [
+                            if (isSelected)
+                              const BoxShadow(
+                                color: AppPalette.neonGlow,
+                                blurRadius: 8,
+                                spreadRadius: -2,
+                              ),
+                            if (isChecked)
+                              const BoxShadow(
+                                color: AppPalette.neonBlue,
+                                blurRadius: 8,
+                                spreadRadius: -4,
+                              ),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(7),
-                        border: Border.all(
-                          color:
-                              isSelected
-                                  ? AppPalette.neonCyan
-                                  : isChecked
-                                  ? AppPalette.white
-                                  : AppPalette.white.withValues(alpha: 0.32),
-                          width: isSelected ? 2 : 1,
-                        ),
-                        boxShadow: [
-                          if (isSelected)
-                            const BoxShadow(
-                              color: AppPalette.neonGlow,
-                              blurRadius: 8,
-                              spreadRadius: -2,
-                            ),
-                          if (isChecked)
-                            const BoxShadow(
-                              color: AppPalette.neonBlue,
-                              blurRadius: 8,
-                              spreadRadius: -4,
-                            ),
-                        ],
+                        child:
+                            isSelected || isChecked
+                                ? const Icon(
+                                  Icons.check_rounded,
+                                  size: 16,
+                                  color: AppPalette.white,
+                                )
+                                : (c['starred'] as bool)
+                                ? const Icon(
+                                  Icons.star,
+                                  size: 16,
+                                  color: AppPalette.white,
+                                )
+                                : null,
                       ),
-                      child:
-                          isSelected || isChecked
-                              ? const Icon(
-                                Icons.check_rounded,
-                                size: 16,
-                                color: AppPalette.white,
-                              )
-                              : (c['starred'] as bool)
-                              ? const Icon(
-                                Icons.star,
-                                size: 16,
-                                color: AppPalette.white,
-                              )
-                              : null,
                     ),
-                  ),
                   );
                 }),
               );

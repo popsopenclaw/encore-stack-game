@@ -280,6 +280,10 @@ class GameController extends ChangeNotifier {
   void toggleCellSelection(String cellId) {
     if (!canInteractWithBoard) return;
     if (blockedCellIds.contains(cellId)) return;
+    if (!selectedCellIds.contains(cellId) &&
+        !reachableCellIds.contains(cellId)) {
+      return;
+    }
     boardHintMessage = null;
     if (selectedCellIds.contains(cellId)) {
       selectedCellIds.remove(cellId);
@@ -465,51 +469,204 @@ class GameController extends ChangeNotifier {
     final board =
         (state?['board'] as List<dynamic>? ?? const [])
             .whereType<Map>()
+            .map((row) => row.map((k, v) => MapEntry('$k', v)))
             .toList();
+    if (board.isEmpty) return {};
+
     final checked = displayedCheckedCellIds;
+    final byId = <String, Map<String, dynamic>>{
+      for (final cell in board) _cellId(cell): cell,
+    };
+    final selectedCells =
+        selectedCellIds
+            .map((id) => byId[id])
+            .whereType<Map<String, dynamic>>()
+            .toList();
 
-    if (checked.isEmpty) {
-      // First move: only column H cells are reachable
-      return board
-          .where((c) => (c['column'] ?? '') == 'H')
-          .map((c) => (c['id'] ?? '').toString())
-          .toSet();
+    if (!_selectionCanExpand(
+      selectedCells: selectedCells,
+      checkedIds: checked,
+      boardById: byId,
+    )) {
+      return Set<String>.from(selectedCellIds);
     }
 
-    // Build coordinate lookup
-    final byCoord = <(int, int), String>{};
-    for (final c in board) {
-      final id = (c['id'] ?? '').toString();
-      final x = c['x'] as int? ?? -1;
-      final y = c['y'] as int? ?? -1;
-      byCoord[(x, y)] = id;
+    final maxSelectableCount = _maxSelectableCountForDie(selectedNumberDie);
+    if (maxSelectableCount != null &&
+        selectedCellIds.length >= maxSelectableCount) {
+      return Set<String>.from(selectedCellIds);
     }
 
-    // Collect coords of checked cells
-    final checkedCoords = <(int, int)>{};
-    for (final c in board) {
-      if (checked.contains((c['id'] ?? '').toString())) {
-        checkedCoords.add((c['x'] as int? ?? -1, c['y'] as int? ?? -1));
-      }
-    }
+    final candidateIds =
+        checked.isEmpty && selectedCellIds.isEmpty
+            ? board
+                .where((cell) => (cell['column'] ?? '').toString() == 'H')
+                .map(_cellId)
+                .where((id) => !checked.contains(id))
+                .toSet()
+            : _adjacentUncheckedCellIds(
+              board: board,
+              checkedIds: checked,
+              selectedIds: selectedCellIds,
+            );
 
-    // Also include selected cells (they connect to checked, expanding frontier)
-    for (final c in board) {
-      if (selectedCellIds.contains((c['id'] ?? '').toString())) {
-        checkedCoords.add((c['x'] as int? ?? -1, c['y'] as int? ?? -1));
-      }
-    }
-
-    // Find all unchecked/unselected cells adjacent to checked or selected
-    final reachable = <String>{};
-    for (final (x, y) in checkedCoords) {
-      for (final n in [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]) {
-        final id = byCoord[n];
-        if (id != null && !checked.contains(id)) reachable.add(id);
+    final reachable = Set<String>.from(selectedCellIds);
+    for (final id in candidateIds) {
+      final cell = byId[id];
+      if (cell == null || selectedCellIds.contains(id)) continue;
+      if (_cellMatchesCurrentMove(cell, selectedCells)) {
+        reachable.add(id);
       }
     }
     return reachable;
   }
+
+  Set<String> _adjacentUncheckedCellIds({
+    required List<Map<String, dynamic>> board,
+    required Set<String> checkedIds,
+    required Set<String> selectedIds,
+  }) {
+    final byCoord = <(int, int), String>{};
+    for (final cell in board) {
+      byCoord[(_cellX(cell), _cellY(cell))] = _cellId(cell);
+    }
+
+    final frontier = <(int, int)>{};
+    for (final cell in board) {
+      final id = _cellId(cell);
+      if (checkedIds.contains(id) || selectedIds.contains(id)) {
+        frontier.add((_cellX(cell), _cellY(cell)));
+      }
+    }
+
+    final reachable = <String>{};
+    for (final (x, y) in frontier) {
+      for (final n in [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]) {
+        final id = byCoord[n];
+        if (id == null || checkedIds.contains(id) || selectedIds.contains(id)) {
+          continue;
+        }
+        reachable.add(id);
+      }
+    }
+    return reachable;
+  }
+
+  bool _selectionCanExpand({
+    required List<Map<String, dynamic>> selectedCells,
+    required Set<String> checkedIds,
+    required Map<String, Map<String, dynamic>> boardById,
+  }) {
+    if (selectedCells.isEmpty) return true;
+    if (!_isConnected(selectedCells)) return false;
+    if (_hasColorConflict(selectedCells)) return false;
+    if (checkedIds.isEmpty) {
+      return selectedCells.any(
+        (cell) => (cell['column'] ?? '').toString() == 'H',
+      );
+    }
+    return _touchesExisting(selectedCells, checkedIds, boardById);
+  }
+
+  bool _cellMatchesCurrentMove(
+    Map<String, dynamic> cell,
+    List<Map<String, dynamic>> selectedCells,
+  ) {
+    if (selectedColorDie == null) return true;
+
+    final cellColor = (cell['color'] ?? '').toString();
+    if (selectedColorDie != 'Joker') {
+      return cellColor == selectedColorDie;
+    }
+
+    final colors =
+        selectedCells
+            .map((selected) => (selected['color'] ?? '').toString())
+            .toSet();
+    if (colors.isEmpty) return true;
+    if (colors.length > 1) return false;
+    return cellColor == colors.first;
+  }
+
+  bool _hasColorConflict(List<Map<String, dynamic>> selectedCells) {
+    if (selectedColorDie == null || selectedCells.isEmpty) return false;
+
+    final colors =
+        selectedCells.map((cell) => (cell['color'] ?? '').toString()).toSet();
+    if (selectedColorDie == 'Joker') return colors.length > 1;
+    return colors.any((color) => color != selectedColorDie);
+  }
+
+  int? _maxSelectableCountForDie(String? die) {
+    switch (die) {
+      case 'One':
+        return 1;
+      case 'Two':
+        return 2;
+      case 'Three':
+        return 3;
+      case 'Four':
+        return 4;
+      case 'Five':
+        return 5;
+      case 'Joker':
+        return 5;
+      default:
+        return null;
+    }
+  }
+
+  bool _isConnected(List<Map<String, dynamic>> cells) {
+    if (cells.isEmpty) return false;
+
+    final coordSet = cells.map((cell) => (_cellX(cell), _cellY(cell))).toSet();
+    final queue = <(int, int)>[coordSet.first];
+    final seen = <(int, int)>{coordSet.first};
+    var i = 0;
+
+    while (i < queue.length) {
+      final (x, y) = queue[i++];
+      for (final n in [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]) {
+        if (coordSet.contains(n) && !seen.contains(n)) {
+          seen.add(n);
+          queue.add(n);
+        }
+      }
+    }
+
+    return seen.length == coordSet.length;
+  }
+
+  bool _touchesExisting(
+    List<Map<String, dynamic>> selectedCells,
+    Set<String> checkedIds,
+    Map<String, Map<String, dynamic>> boardById,
+  ) {
+    final existingCoords =
+        checkedIds
+            .map((id) => boardById[id])
+            .whereType<Map<String, dynamic>>()
+            .map((cell) => (_cellX(cell), _cellY(cell)))
+            .toSet();
+
+    for (final cell in selectedCells) {
+      final x = _cellX(cell);
+      final y = _cellY(cell);
+      for (final n in [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]) {
+        if (existingCoords.contains(n)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  String _cellId(Map<String, dynamic> cell) => (cell['id'] ?? '').toString();
+
+  int _cellX(Map<String, dynamic> cell) => (cell['x'] as int?) ?? -1;
+
+  int _cellY(Map<String, dynamic> cell) => (cell['y'] as int?) ?? -1;
 
   MoveValidationResult? get currentMoveValidation {
     if (!canInteractWithBoard) return null;
