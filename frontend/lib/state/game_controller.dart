@@ -460,6 +460,57 @@ class GameController extends ChangeNotifier {
   Set<String> get blockedCellIds =>
       isViewingOwnBoard ? displayedCheckedCellIds : <String>{};
 
+  Set<String> get reachableCellIds {
+    if (!canInteractWithBoard) return {};
+    final board =
+        (state?['board'] as List<dynamic>? ?? const [])
+            .whereType<Map>()
+            .toList();
+    final checked = displayedCheckedCellIds;
+
+    if (checked.isEmpty) {
+      // First move: only column H cells are reachable
+      return board
+          .where((c) => (c['column'] ?? '') == 'H')
+          .map((c) => (c['id'] ?? '').toString())
+          .toSet();
+    }
+
+    // Build coordinate lookup
+    final byCoord = <(int, int), String>{};
+    for (final c in board) {
+      final id = (c['id'] ?? '').toString();
+      final x = c['x'] as int? ?? -1;
+      final y = c['y'] as int? ?? -1;
+      byCoord[(x, y)] = id;
+    }
+
+    // Collect coords of checked cells
+    final checkedCoords = <(int, int)>{};
+    for (final c in board) {
+      if (checked.contains((c['id'] ?? '').toString())) {
+        checkedCoords.add((c['x'] as int? ?? -1, c['y'] as int? ?? -1));
+      }
+    }
+
+    // Also include selected cells (they connect to checked, expanding frontier)
+    for (final c in board) {
+      if (selectedCellIds.contains((c['id'] ?? '').toString())) {
+        checkedCoords.add((c['x'] as int? ?? -1, c['y'] as int? ?? -1));
+      }
+    }
+
+    // Find all unchecked/unselected cells adjacent to checked or selected
+    final reachable = <String>{};
+    for (final (x, y) in checkedCoords) {
+      for (final n in [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]) {
+        final id = byCoord[n];
+        if (id != null && !checked.contains(id)) reachable.add(id);
+      }
+    }
+    return reachable;
+  }
+
   MoveValidationResult? get currentMoveValidation {
     if (!canInteractWithBoard) return null;
     return MoveValidator.validate(

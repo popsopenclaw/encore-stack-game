@@ -199,6 +199,7 @@ class _GameScreenState extends State<GameScreen> {
                                   controller.hintForBlockedCellTap,
                               onBlockedTapHint: controller.showBoardHint,
                               interactionHint: controller.boardInteractionHint,
+                              reachableCellIds: controller.reachableCellIds,
                             ),
                           );
 

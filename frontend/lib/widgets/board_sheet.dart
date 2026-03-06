@@ -16,6 +16,7 @@ class BoardSheet extends StatelessWidget {
     this.interactionHint,
     this.blockedTapHintForCell,
     this.onBlockedTapHint,
+    this.reachableCellIds = const <String>{},
   });
 
   final List<Map<String, dynamic>> board;
@@ -28,6 +29,7 @@ class BoardSheet extends StatelessWidget {
   final String? interactionHint;
   final String Function(String cellId)? blockedTapHintForCell;
   final void Function(String message)? onBlockedTapHint;
+  final Set<String> reachableCellIds;
 
   @override
   Widget build(BuildContext context) {
@@ -71,6 +73,7 @@ class BoardSheet extends StatelessWidget {
                                 blockedCellIds: blockedCellIds,
                                 blockedTapHintForCell: blockedTapHintForCell,
                                 onBlockedTapHint: onBlockedTapHint,
+                                reachableCellIds: reachableCellIds,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -91,6 +94,7 @@ class BoardSheet extends StatelessWidget {
                                 blockedCellIds: blockedCellIds,
                                 blockedTapHintForCell: blockedTapHintForCell,
                                 onBlockedTapHint: onBlockedTapHint,
+                                reachableCellIds: reachableCellIds,
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -345,6 +349,7 @@ class BoardGrid extends StatelessWidget {
     required this.blockedCellIds,
     this.blockedTapHintForCell,
     this.onBlockedTapHint,
+    this.reachableCellIds = const <String>{},
   });
 
   final List<Map<String, dynamic>> board;
@@ -356,6 +361,7 @@ class BoardGrid extends StatelessWidget {
   final Set<String> blockedCellIds;
   final String Function(String cellId)? blockedTapHintForCell;
   final void Function(String message)? onBlockedTapHint;
+  final Set<String> reachableCellIds;
 
   @override
   Widget build(BuildContext context) {
@@ -420,8 +426,14 @@ class BoardGrid extends StatelessWidget {
                   final isSelected = selectedCellIds.contains(cellId);
                   final isBlocked = blockedCellIds.contains(cellId);
                   final isTapEnabled = interactionEnabled && !isBlocked;
+                  final isReachable = reachableCellIds.isEmpty ||
+                      reachableCellIds.contains(cellId) ||
+                      isChecked ||
+                      isSelected;
 
-                  return GestureDetector(
+                  return Opacity(
+                    opacity: isReachable ? 1.0 : 0.4,
+                    child: GestureDetector(
                     onTap: () {
                       if (isTapEnabled) {
                         onCellTap(cellId);
@@ -489,6 +501,7 @@ class BoardGrid extends StatelessWidget {
                               )
                               : null,
                     ),
+                  ),
                   );
                 }),
               );
