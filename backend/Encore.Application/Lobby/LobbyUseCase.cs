@@ -1,5 +1,6 @@
 using Encore.Application.Abstractions;
 using Encore.Application.Contracts.Lobby;
+using Encore.Domain;
 using Encore.Domain.Models;
 using Microsoft.Extensions.Configuration;
 using LobbyEntity = Encore.Domain.Models.Lobby;
@@ -126,12 +127,14 @@ public class LobbyUseCase(
         var namesByAccountId = await LoadPlayerNamesAsync(
             lobby.Members.Select(m => m.AccountId).Distinct().ToList(),
             cancellationToken);
-        var names = lobby.Members
-            .Select(m => namesByAccountId.TryGetValue(m.AccountId, out var playerName) && !string.IsNullOrWhiteSpace(playerName)
-                ? playerName
-                : string.IsNullOrWhiteSpace(m.DisplayName) ? "Player" : m.DisplayName)
+        var players = lobby.Members
+            .Select(m => new GamePlayerSeed(
+                m.AccountId,
+                namesByAccountId.TryGetValue(m.AccountId, out var playerName) && !string.IsNullOrWhiteSpace(playerName)
+                    ? playerName
+                    : string.IsNullOrWhiteSpace(m.DisplayName) ? "Player" : m.DisplayName))
             .ToList();
-        var state = rules.NewGame(names);
+        var state = rules.NewGame(players);
         await gameplayRepository.SaveAsync(state.SessionId, state);
         lobby.ActiveSessionId = state.SessionId;
         await repository.SaveChangesAsync(cancellationToken);

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -11,7 +13,6 @@ import 'move_validator.dart';
 class GameController extends ChangeNotifier {
   final backendUrl = TextEditingController(text: kBackendUrlFromBuild);
   final oauthCode = TextEditingController();
-  final players = TextEditingController(text: 'pop,bot2');
 
   String? jwt;
   String? sessionId;
@@ -29,9 +30,11 @@ class GameController extends ChangeNotifier {
   String? boardHintMessage;
   bool attemptedAutoResume = false;
   ApiErrorCode? lastLoadErrorCode;
+  int? _selectedBoardPlayerIndex;
 
   String get apiBase => backendUrl.text.trim();
   ApiClient get client => ApiClient(baseUrl: apiBase, jwt: jwt);
+  String? get currentAccountId => jwt == null ? null : _readSubFromJwt(jwt!);
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
@@ -62,7 +65,6 @@ class GameController extends ChangeNotifier {
   Future<void> disposeController() async {
     backendUrl.dispose();
     oauthCode.dispose();
-    players.dispose();
   }
 
   Future<void> saveBackendUrl() async {
@@ -97,20 +99,6 @@ class GameController extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(kJwtPrefKey, jwt!);
     await authSessionController.markLoggedIn(jwt!);
-  });
-
-  Future<void> startGame() async => _run('Start game', () async {
-    final names =
-        players.text
-            .split(',')
-            .map((e) => e.trim())
-            .where((e) => e.isNotEmpty)
-            .toList();
-    final game = await client.startGame(names);
-    state = game;
-    sessionId = game['sessionId'] as String;
-    await saveActiveSessionId(sessionId!);
-    _syncSelectionAfterStateChange();
   });
 
   Future<void> startMatchFromLobby(String lobbyCode) async => _run(
@@ -167,6 +155,7 @@ class GameController extends ChangeNotifier {
         selectedCellIds.clear();
         validationMessage = null;
         boardHintMessage = null;
+        _selectedBoardPlayerIndex = null;
         _setStatus('Previous game session is no longer available.');
       } else {
         _setStatus('Resume failed: ${_messageForApiError(e)}');
@@ -208,19 +197,6 @@ class GameController extends ChangeNotifier {
     });
   }
 
-  Future<void> allPassOnce() async {
-    if (sessionId == null || state == null) return;
-    await _run('Resolve pass round', () async {
-      final count = (state!['players'] as List<dynamic>).length;
-      for (var i = 0; i < count; i++) {
-        await client.playerAction(sessionId!, playerIndex: i, pass: true);
-      }
-      state = await client.getGame(sessionId!);
-      await loadAvailableDiceForCurrentPlayer(quiet: true);
-      _syncSelectionAfterStateChange();
-    });
-  }
-
   Future<void> loadScoreAndEvents() async {
     if (sessionId == null) return;
     await _run('Load score/events', () async {
@@ -230,12 +206,17 @@ class GameController extends ChangeNotifier {
   }
 
   Future<void> loadAvailableDiceForCurrentPlayer({bool quiet = false}) async {
-    if (!canLoadAvailableDice) return;
+    if (!canLoadAvailableDice) {
+      availableColorDice = const [];
+      availableNumberDice = const [];
+      selectedColorDie = null;
+      selectedNumberDie = null;
+      _refreshValidationMessage();
+      return;
+    }
+
     Future<void> fn() async {
-      final playerIndex =
-          currentResolvingPlayerIndex ??
-          (state?['activePlayerIndex'] as int?) ??
-          0;
+      final playerIndex = myPlayerIndex!;
       final dice = await client.getAvailableDice(
         sessionId!,
         playerIndex: playerIndex,
@@ -282,6 +263,20 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void selectPreviousBoard() {
+    if (playersState.length < 2) return;
+    final current = selectedBoardPlayerIndex ?? 0;
+    final next = (current - 1 + playersState.length) % playersState.length;
+    _setSelectedBoardPlayerIndex(next);
+  }
+
+  void selectNextBoard() {
+    if (playersState.length < 2) return;
+    final current = selectedBoardPlayerIndex ?? 0;
+    final next = (current + 1) % playersState.length;
+    _setSelectedBoardPlayerIndex(next);
+  }
+
   void toggleCellSelection(String cellId) {
     if (!canInteractWithBoard) return;
     if (blockedCellIds.contains(cellId)) return;
@@ -320,10 +315,7 @@ class GameController extends ChangeNotifier {
       return;
     }
     await _run('Submit move', () async {
-      final idx =
-          currentResolvingPlayerIndex ??
-          (state?['activePlayerIndex'] as int?) ??
-          0;
+      final idx = myPlayerIndex!;
       await client.playerAction(
         sessionId!,
         playerIndex: idx,
@@ -340,30 +332,51 @@ class GameController extends ChangeNotifier {
 
   String get phase => (state?['phase']?.toString() ?? 'NeedRoll');
 
-  bool get canRoll => sessionId != null && phase == 'NeedRoll';
-  bool get canActivePass => sessionId != null && phase == 'NeedActiveSelection';
-  bool get canSubmitActiveSelection =>
-      sessionId != null &&
-      phase == 'NeedActiveSelection' &&
-      selectedColorDie != null &&
-      selectedNumberDie != null;
-
-  bool get canSubmitMove =>
-      sessionId != null &&
-      phase == 'PlayersResolving' &&
-      selectedColorDie != null &&
-      selectedNumberDie != null &&
-      selectedCellIds.isNotEmpty &&
-      (currentMoveValidation?.ok ?? false);
-
-  bool get canLoadAvailableDice =>
-      sessionId != null && phase == 'PlayersResolving';
-
   List<Map<String, dynamic>> get playersState =>
       ((state?['players'] as List<dynamic>?) ?? const [])
           .whereType<Map>()
           .map((row) => row.map((k, v) => MapEntry('$k', v)))
           .toList();
+
+  int? get myPlayerIndex {
+    final accountId = currentAccountId;
+    if (accountId == null || accountId.isEmpty) return null;
+    for (var i = 0; i < playersState.length; i++) {
+      if ((playersState[i]['accountId']?.toString() ?? '') == accountId) {
+        return i;
+      }
+    }
+    return null;
+  }
+
+  int? get selectedBoardPlayerIndex {
+    final idx =
+        _selectedBoardPlayerIndex ??
+        myPlayerIndex ??
+        (playersState.isEmpty ? null : 0);
+    if (idx == null || idx < 0 || idx >= playersState.length) return null;
+    return idx;
+  }
+
+  Map<String, dynamic>? get selectedBoardPlayer {
+    final idx = selectedBoardPlayerIndex;
+    if (idx == null) return null;
+    return playersState[idx];
+  }
+
+  String get selectedBoardPlayerName {
+    final idx = selectedBoardPlayerIndex;
+    final player = selectedBoardPlayer;
+    return player?['name']?.toString() ??
+        (idx == null ? 'Player' : 'P${idx + 1}');
+  }
+
+  String get turnPlayerName {
+    final idx = (state?['activePlayerIndex'] as int?) ?? 0;
+    if (idx < 0 || idx >= playersState.length) return '-';
+    final player = playersState[idx];
+    return player['name']?.toString() ?? 'P${idx + 1}';
+  }
 
   Set<int> get resolvedPlayerIndices =>
       ((state?['resolvedPlayers'] as List<dynamic>?) ?? const [])
@@ -396,30 +409,83 @@ class GameController extends ChangeNotifier {
   int get currentResolvingPlayerJokers =>
       (currentResolvingPlayer?['jokerMarksRemaining'] as int?) ?? 0;
 
-  bool get canInteractWithBoard =>
-      sessionId != null && phase == 'PlayersResolving';
+  bool get isViewingOwnBoard =>
+      selectedBoardPlayerIndex != null &&
+      myPlayerIndex != null &&
+      selectedBoardPlayerIndex == myPlayerIndex;
 
-  Set<String> get blockedCellIds {
-    if (phase != 'PlayersResolving') return {};
-    final checked =
-        ((currentResolvingPlayer?['checkedCells'] as List<dynamic>?) ??
-                const [])
-            .map((e) => '$e')
-            .toSet();
-    return checked;
-  }
+  bool get isActiveTurnOwner =>
+      sessionId != null &&
+      myPlayerIndex != null &&
+      phase == 'NeedRoll' &&
+      (state?['activePlayerIndex'] as int?) == myPlayerIndex;
+
+  bool get isActiveSelectionOwner =>
+      sessionId != null &&
+      myPlayerIndex != null &&
+      phase == 'NeedActiveSelection' &&
+      (state?['activePlayerIndex'] as int?) == myPlayerIndex;
+
+  bool get isAwaitingMyMove =>
+      sessionId != null &&
+      myPlayerIndex != null &&
+      phase == 'PlayersResolving' &&
+      currentResolvingPlayerIndex == myPlayerIndex;
+
+  bool get canPickDice => isActiveSelectionOwner || isAwaitingMyMove;
+  bool get canRoll => isActiveTurnOwner;
+  bool get canActivePass => isActiveSelectionOwner;
+  bool get canSubmitActiveSelection =>
+      isActiveSelectionOwner &&
+      selectedColorDie != null &&
+      selectedNumberDie != null;
+  bool get canLoadAvailableDice => isAwaitingMyMove;
+  bool get canInteractWithBoard => isViewingOwnBoard && isAwaitingMyMove;
+
+  bool get canSubmitMove =>
+      canInteractWithBoard &&
+      selectedColorDie != null &&
+      selectedNumberDie != null &&
+      selectedCellIds.isNotEmpty &&
+      (currentMoveValidation?.ok ?? false);
+
+  Set<String> get displayedCheckedCellIds =>
+      ((selectedBoardPlayer?['checkedCells'] as List<dynamic>?) ?? const [])
+          .map((e) => '$e')
+          .toSet();
+
+  Set<String> get boardSelectedCellIds =>
+      isViewingOwnBoard ? selectedCellIds : <String>{};
+
+  Set<String> get blockedCellIds =>
+      isViewingOwnBoard ? displayedCheckedCellIds : <String>{};
 
   MoveValidationResult? get currentMoveValidation {
     if (!canInteractWithBoard) return null;
     return MoveValidator.validate(
       state: state,
-      playerIndex: currentResolvingPlayerIndex,
+      playerIndex: myPlayerIndex,
       selectedCellIds: selectedCellIds,
       colorDie: selectedColorDie,
       numberDie: selectedNumberDie,
       availableColorDice: availableColorDice,
       availableNumberDice: availableNumberDice,
     );
+  }
+
+  String? get boardInteractionHint {
+    if (boardHintMessage != null && boardHintMessage!.isNotEmpty) {
+      return boardHintMessage;
+    }
+    if (playersState.isEmpty) return null;
+    if (!isViewingOwnBoard) return 'Viewing $selectedBoardPlayerName\'s board.';
+    if (phase != 'PlayersResolving') {
+      return 'Viewing your board. It becomes interactive during Players Resolving.';
+    }
+    if (!isAwaitingMyMove) {
+      return 'Viewing your board. Wait for your resolve turn.';
+    }
+    return validationMessage;
   }
 
   Future<void> _run(String action, Future<void> Function() fn) async {
@@ -469,6 +535,8 @@ class GameController extends ChangeNotifier {
 
   void _syncSelectionAfterStateChange() {
     boardHintMessage = null;
+    _syncSelectedBoardAfterStateChange();
+
     if (phase == 'NeedActiveSelection') {
       final roll = state?['currentRoll'] as Map<String, dynamic>?;
       availableColorDice = DieFaceCodec.colorFaces(
@@ -492,7 +560,17 @@ class GameController extends ChangeNotifier {
                   ? availableNumberDice.first
                   : null);
       selectedCellIds.clear();
-    } else if (phase != 'PlayersResolving') {
+    } else if (phase == 'PlayersResolving') {
+      if (!canLoadAvailableDice) {
+        availableColorDice = const [];
+        availableNumberDice = const [];
+        selectedColorDie = null;
+        selectedNumberDie = null;
+      }
+      if (!canInteractWithBoard) {
+        selectedCellIds.clear();
+      }
+    } else {
       selectedCellIds.clear();
       availableColorDice = const [];
       availableNumberDice = const [];
@@ -500,6 +578,21 @@ class GameController extends ChangeNotifier {
       selectedNumberDie = null;
     }
     _refreshValidationMessage();
+  }
+
+  void _syncSelectedBoardAfterStateChange() {
+    if (playersState.isEmpty) {
+      _selectedBoardPlayerIndex = null;
+      return;
+    }
+
+    if (_selectedBoardPlayerIndex != null &&
+        _selectedBoardPlayerIndex! >= 0 &&
+        _selectedBoardPlayerIndex! < playersState.length) {
+      return;
+    }
+
+    _selectedBoardPlayerIndex = myPlayerIndex ?? 0;
   }
 
   void _refreshValidationMessage() {
@@ -514,14 +607,25 @@ class GameController extends ChangeNotifier {
     validationMessage = (result == null || result.ok) ? null : result.reason;
   }
 
+  void _setSelectedBoardPlayerIndex(int nextIndex) {
+    if (nextIndex < 0 || nextIndex >= playersState.length) return;
+    _selectedBoardPlayerIndex = nextIndex;
+    boardHintMessage = null;
+    notifyListeners();
+  }
+
   String hintForBlockedCellTap(String cellId) {
-    if (!canInteractWithBoard) {
+    if (!isViewingOwnBoard) {
+      return 'You can only play on your own board.';
+    }
+    if (phase != 'PlayersResolving') {
       return 'You can only mark cells during Players Resolving.';
     }
+    if (!isAwaitingMyMove) {
+      return 'It is not your resolve turn.';
+    }
     if (blockedCellIds.contains(cellId)) {
-      final name =
-          currentResolvingPlayer?['name']?.toString() ?? 'Current player';
-      return '$name already checked this cell.';
+      return 'You already checked this cell.';
     }
     return validationMessage ?? 'That cell is not selectable right now.';
   }
@@ -529,5 +633,18 @@ class GameController extends ChangeNotifier {
   void showBoardHint(String message) {
     boardHintMessage = message;
     notifyListeners();
+  }
+
+  String? _readSubFromJwt(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return null;
+      final normalized = base64Url.normalize(parts[1]);
+      final payload = utf8.decode(base64Url.decode(normalized));
+      final map = jsonDecode(payload) as Map<String, dynamic>;
+      return map['sub']?.toString();
+    } catch (_) {
+      return null;
+    }
   }
 }

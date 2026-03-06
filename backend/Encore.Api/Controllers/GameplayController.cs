@@ -1,6 +1,7 @@
 using Encore.Domain;
 using Encore.Application.Gameplay;
 using Encore.Api.Middleware;
+using Encore.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,27 +12,20 @@ namespace Encore.Api.Controllers;
 [Route("api/[controller]")]
 public class GameplayController(IGameplayUseCase gameplay) : ControllerBase
 {
-    [HttpPost("start")]
-    public async Task<IActionResult> Start([FromBody] StartGameRequest req)
-    {
-        try
-        {
-            var state = await gameplay.StartAsync(req);
-            return Ok(state);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(ApiErrorFactory.Create("invalid_request", ex.Message, HttpContext));
-        }
-    }
-
     [HttpGet("{sessionId}")]
     public async Task<IActionResult> Get(string sessionId)
     {
-        var state = await gameplay.GetAsync(sessionId);
-        return state is null
-            ? NotFound(ApiErrorFactory.Create("not_found", "Game session not found", HttpContext))
-            : Ok(state);
+        try
+        {
+            var state = await gameplay.GetAsync(User.GetRequiredAccountId(), sessionId);
+            return state is null
+                ? NotFound(ApiErrorFactory.Create("not_found", "Game session not found", HttpContext))
+                : Ok(state);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, ApiErrorFactory.Create("forbidden", ex.Message, HttpContext));
+        }
     }
 
     [HttpPost("{sessionId}/roll")]
@@ -39,12 +33,16 @@ public class GameplayController(IGameplayUseCase gameplay) : ControllerBase
     {
         try
         {
-            var roll = await gameplay.RollAsync(sessionId);
+            var roll = await gameplay.RollAsync(User.GetRequiredAccountId(), sessionId);
             return Ok(roll);
         }
         catch (KeyNotFoundException ex)
         {
             return NotFound(ApiErrorFactory.Create("not_found", ex.Message, HttpContext));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, ApiErrorFactory.Create("forbidden", ex.Message, HttpContext));
         }
         catch (Exception ex)
         {
@@ -57,12 +55,16 @@ public class GameplayController(IGameplayUseCase gameplay) : ControllerBase
     {
         try
         {
-            var state = await gameplay.ActiveSelectAsync(sessionId, request);
+            var state = await gameplay.ActiveSelectAsync(User.GetRequiredAccountId(), sessionId, request);
             return Ok(state);
         }
         catch (KeyNotFoundException ex)
         {
             return NotFound(ApiErrorFactory.Create("not_found", ex.Message, HttpContext));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, ApiErrorFactory.Create("forbidden", ex.Message, HttpContext));
         }
         catch (Exception ex)
         {
@@ -75,12 +77,16 @@ public class GameplayController(IGameplayUseCase gameplay) : ControllerBase
     {
         try
         {
-            var dice = await gameplay.GetAvailableDiceAsync(sessionId, playerIndex);
+            var dice = await gameplay.GetAvailableDiceAsync(User.GetRequiredAccountId(), sessionId, playerIndex);
             return Ok(dice);
         }
         catch (KeyNotFoundException ex)
         {
             return NotFound(ApiErrorFactory.Create("not_found", ex.Message, HttpContext));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, ApiErrorFactory.Create("forbidden", ex.Message, HttpContext));
         }
         catch (Exception ex)
         {
@@ -93,12 +99,16 @@ public class GameplayController(IGameplayUseCase gameplay) : ControllerBase
     {
         try
         {
-            var state = await gameplay.PlayerActionAsync(sessionId, request);
+            var state = await gameplay.PlayerActionAsync(User.GetRequiredAccountId(), sessionId, request);
             return Ok(state);
         }
         catch (KeyNotFoundException ex)
         {
             return NotFound(ApiErrorFactory.Create("not_found", ex.Message, HttpContext));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, ApiErrorFactory.Create("forbidden", ex.Message, HttpContext));
         }
         catch (Exception ex)
         {
@@ -111,12 +121,16 @@ public class GameplayController(IGameplayUseCase gameplay) : ControllerBase
     {
         try
         {
-            var state = await gameplay.EnableEncoreAsync(sessionId);
+            var state = await gameplay.EnableEncoreAsync(User.GetRequiredAccountId(), sessionId);
             return Ok(state);
         }
         catch (KeyNotFoundException ex)
         {
             return NotFound(ApiErrorFactory.Create("not_found", ex.Message, HttpContext));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, ApiErrorFactory.Create("forbidden", ex.Message, HttpContext));
         }
         catch (Exception ex)
         {
@@ -127,36 +141,32 @@ public class GameplayController(IGameplayUseCase gameplay) : ControllerBase
     [HttpGet("{sessionId}/score")]
     public async Task<IActionResult> Score(string sessionId)
     {
-        var score = await gameplay.ScoreAsync(sessionId);
-        return score is null
-            ? NotFound(ApiErrorFactory.Create("not_found", "Game session not found", HttpContext))
-            : Ok(score);
+        try
+        {
+            var score = await gameplay.ScoreAsync(User.GetRequiredAccountId(), sessionId);
+            return score is null
+                ? NotFound(ApiErrorFactory.Create("not_found", "Game session not found", HttpContext))
+                : Ok(score);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, ApiErrorFactory.Create("forbidden", ex.Message, HttpContext));
+        }
     }
 
     [HttpGet("{sessionId}/events")]
     public async Task<IActionResult> Events(string sessionId)
     {
-        var eventsList = await gameplay.EventsAsync(sessionId);
-        return eventsList is null
-            ? NotFound(ApiErrorFactory.Create("not_found", "Game session not found", HttpContext))
-            : Ok(eventsList);
-    }
-
-    [HttpPost("{sessionId}/move")]
-    public async Task<IActionResult> Move(string sessionId, [FromBody] MoveRequest move)
-    {
         try
         {
-            var state = await gameplay.LegacyMoveAsync(sessionId, move);
-            return Ok(state);
+            var eventsList = await gameplay.EventsAsync(User.GetRequiredAccountId(), sessionId);
+            return eventsList is null
+                ? NotFound(ApiErrorFactory.Create("not_found", "Game session not found", HttpContext))
+                : Ok(eventsList);
         }
-        catch (KeyNotFoundException ex)
+        catch (UnauthorizedAccessException ex)
         {
-            return NotFound(ApiErrorFactory.Create("not_found", ex.Message, HttpContext));
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(ApiErrorFactory.Create("invalid_request", ex.Message, HttpContext));
+            return StatusCode(StatusCodes.Status403Forbidden, ApiErrorFactory.Create("forbidden", ex.Message, HttpContext));
         }
     }
 }

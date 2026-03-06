@@ -28,7 +28,7 @@ void main() {
       (tester) async {
         SharedPreferences.setMockInitialValues({
           kBackendPrefKey: 'http://encore.test',
-          kJwtPrefKey: 'jwt-token',
+          kJwtPrefKey: _jwtWithSub('11111111-1111-1111-1111-111111111111'),
         });
 
         await _pumpGameScreen(tester, size: const Size(1400, 1000));
@@ -38,7 +38,7 @@ void main() {
         final controlsRect = tester.getRect(find.byType(MatchHudPanel));
 
         expect(find.byType(MatchHudPanel), findsOneWidget);
-        expect(find.text('Open Scores / Timeline'), findsOneWidget);
+        expect(find.byIcon(Icons.timeline), findsOneWidget);
         expect(
           find.text('Scoreboard loads after opening timeline.'),
           findsNothing,
@@ -46,7 +46,7 @@ void main() {
         expect(controlsRect.left, greaterThan(boardRect.right - 24));
         expect((controlsRect.top - boardRect.top).abs(), lessThan(24));
 
-        await tester.tap(find.text('Open Scores / Timeline'));
+        await tester.tap(find.byIcon(Icons.timeline));
         await tester.pumpAndSettle();
 
         expect(find.text('Match Log'), findsOneWidget);
@@ -60,7 +60,7 @@ void main() {
     ) async {
       SharedPreferences.setMockInitialValues({
         kBackendPrefKey: 'http://encore.test',
-        kJwtPrefKey: 'jwt-token',
+        kJwtPrefKey: _jwtWithSub('11111111-1111-1111-1111-111111111111'),
       });
 
       await _pumpGameScreen(tester, size: const Size(900, 1000));
@@ -70,7 +70,7 @@ void main() {
       final controlsRect = tester.getRect(find.byType(MatchHudPanel));
 
       expect(find.byType(MatchHudPanel), findsOneWidget);
-      expect(find.text('Open Scores / Timeline'), findsOneWidget);
+      expect(find.byIcon(Icons.timeline), findsOneWidget);
       expect(
         find.text('Scoreboard loads after opening timeline.'),
         findsNothing,
@@ -106,6 +106,7 @@ _FakeResponse _responseFor(String method, Uri uri, List<int> bodyBytes) {
       'activePlayerIndex': 0,
       'players': [
         {
+          'accountId': '11111111-1111-1111-1111-111111111111',
           'name': 'PopAndBoom',
           'checkedCells': const [],
           'jokerMarksRemaining': 8,
@@ -152,6 +153,11 @@ _FakeResponse _responseFor(String method, Uri uri, List<int> bodyBytes) {
     'code': 'not_found',
     'message': 'Unhandled path: ${uri.path}',
   });
+}
+
+String _jwtWithSub(String sub) {
+  final payload = base64Url.encode(utf8.encode(jsonEncode({'sub': sub})));
+  return 'header.$payload.signature';
 }
 
 class _FakeHttpOverrides extends HttpOverrides {

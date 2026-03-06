@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 
@@ -42,5 +43,21 @@ public class GameplayContractRegressionTests : IClassFixture<ApiWebFactory>
         Assert.Equal(JsonValueKind.Array, payload["numberDice"].ValueKind);
         Assert.All(payload["colorDice"].EnumerateArray(), v => Assert.Equal(JsonValueKind.String, v.ValueKind));
         Assert.All(payload["numberDice"].EnumerateArray(), v => Assert.Equal(JsonValueKind.String, v.ValueKind));
+    }
+
+    [Fact]
+    public async Task AvailableDice_ForAnotherPlayer_ReturnsForbidden()
+    {
+        var res = await _client.GetAsync("/api/gameplay/test-session/available-dice/1");
+
+        Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
+    }
+
+    [Fact]
+    public async Task LegacyStartRoute_IsNotSupported()
+    {
+        var res = await _client.PostAsJsonAsync("/api/gameplay/start", new { playerNames = new[] { "a", "b" } });
+
+        Assert.Equal(HttpStatusCode.MethodNotAllowed, res.StatusCode);
     }
 }

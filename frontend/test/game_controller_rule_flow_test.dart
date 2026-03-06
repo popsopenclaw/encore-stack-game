@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:encore_frontend/state/game_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -7,6 +9,7 @@ void main() {
       'resolving player index advances from active through unresolved players',
       () {
         final controller = GameController();
+        controller.jwt = _jwtWithSub('33333333-3333-3333-3333-333333333333');
         controller.sessionId = 's1';
         controller.state = {
           'phase': 'PlayersResolving',
@@ -14,16 +17,19 @@ void main() {
           'resolvedPlayers': [1],
           'players': [
             {
+              'accountId': '11111111-1111-1111-1111-111111111111',
               'name': 'A',
               'checkedCells': ['c1'],
               'jokerMarksRemaining': 8,
             },
             {
+              'accountId': '22222222-2222-2222-2222-222222222222',
               'name': 'B',
               'checkedCells': ['c2'],
               'jokerMarksRemaining': 8,
             },
             {
+              'accountId': '33333333-3333-3333-3333-333333333333',
               'name': 'C',
               'checkedCells': ['c3'],
               'jokerMarksRemaining': 7,
@@ -40,13 +46,19 @@ void main() {
 
     test('submit gate blocks invalid opening move outside column H', () {
       final controller = GameController();
+      controller.jwt = _jwtWithSub('11111111-1111-1111-1111-111111111111');
       controller.sessionId = 's1';
       controller.state = {
         'phase': 'PlayersResolving',
         'activePlayerIndex': 0,
         'resolvedPlayers': <int>[],
         'players': [
-          {'name': 'A', 'checkedCells': <String>[], 'jokerMarksRemaining': 8},
+          {
+            'accountId': '11111111-1111-1111-1111-111111111111',
+            'name': 'A',
+            'checkedCells': <String>[],
+            'jokerMarksRemaining': 8,
+          },
         ],
         'board': _board(),
       };
@@ -62,13 +74,19 @@ void main() {
 
     test('submit gate allows valid opening move in column H', () {
       final controller = GameController();
+      controller.jwt = _jwtWithSub('11111111-1111-1111-1111-111111111111');
       controller.sessionId = 's1';
       controller.state = {
         'phase': 'PlayersResolving',
         'activePlayerIndex': 0,
         'resolvedPlayers': <int>[],
         'players': [
-          {'name': 'A', 'checkedCells': <String>[], 'jokerMarksRemaining': 8},
+          {
+            'accountId': '11111111-1111-1111-1111-111111111111',
+            'name': 'A',
+            'checkedCells': <String>[],
+            'jokerMarksRemaining': 8,
+          },
         ],
         'board': _board(),
       };
@@ -82,6 +100,11 @@ void main() {
       expect(controller.canSubmitMove, true);
     });
   });
+}
+
+String _jwtWithSub(String sub) {
+  final payload = base64Url.encode(utf8.encode(jsonEncode({'sub': sub})));
+  return 'header.$payload.signature';
 }
 
 List<Map<String, dynamic>> _board() => const [

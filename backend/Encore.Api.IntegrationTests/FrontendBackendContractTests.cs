@@ -74,15 +74,16 @@ public class FrontendBackendContractTests : IClassFixture<ApiWebFactory>
     }
 
     [Fact]
-    public async Task GameplayStart_Contract_ReturnsSessionAndPlayers()
+    public async Task GameplayGet_Contract_ReturnsSessionAndOwnedPlayers()
     {
-        var response = await _client.PostAsJsonAsync("/api/gameplay/start", new StartGameRequest(["p1", "p2"]));
+        var response = await _client.GetAsync("/api/gameplay/test-session");
         response.EnsureSuccessStatusCode();
 
         var state = await response.Content.ReadFromJsonAsync<GameState>();
         Assert.NotNull(state);
         Assert.Equal("test-session", state!.SessionId);
         Assert.Equal(2, state.Players.Count);
+        Assert.NotEqual(Guid.Empty, state.Players[0].AccountId);
     }
 
     [Fact]

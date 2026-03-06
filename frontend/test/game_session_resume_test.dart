@@ -32,7 +32,7 @@ void main() {
       final controller = _TestGameController(
         ApiClient(
           baseUrl: 'http://localhost:8080',
-          jwt: 't',
+          jwt: _jwtWithSub('11111111-1111-1111-1111-111111111111'),
           httpClient: MockClient((request) async {
             expect(request.url.path, '/api/gameplay/s1');
             return http.Response(
@@ -40,7 +40,14 @@ void main() {
                 'sessionId': 's1',
                 'phase': 'NeedRoll',
                 'activePlayerIndex': 0,
-                'players': const [],
+                'players': [
+                  {
+                    'accountId': '11111111-1111-1111-1111-111111111111',
+                    'name': 'A',
+                    'checkedCells': const [],
+                    'jokerMarksRemaining': 8,
+                  },
+                ],
                 'board': const [],
               }),
               200,
@@ -66,7 +73,7 @@ void main() {
       final controller = _TestGameController(
         ApiClient(
           baseUrl: 'http://localhost:8080',
-          jwt: 't',
+          jwt: _jwtWithSub('11111111-1111-1111-1111-111111111111'),
           httpClient: MockClient((request) async {
             expect(request.url.path, '/api/gameplay/gone');
             return http.Response(
@@ -94,7 +101,7 @@ void main() {
         final controller = _TestGameController(
           ApiClient(
             baseUrl: 'http://localhost:8080',
-            jwt: 't',
+            jwt: _jwtWithSub('11111111-1111-1111-1111-111111111111'),
             httpClient: MockClient((request) async {
               expect(request.url.path, '/api/gameplay/session01');
               return http.Response(
@@ -104,6 +111,7 @@ void main() {
                   'activePlayerIndex': 0,
                   'players': [
                     {
+                      'accountId': '11111111-1111-1111-1111-111111111111',
                       'name': 'A',
                       'checkedCells': const [],
                       'jokerMarksRemaining': 8,
@@ -139,7 +147,7 @@ void main() {
         final controller = _TestGameController(
           ApiClient(
             baseUrl: 'http://localhost:8080',
-            jwt: 't',
+            jwt: _jwtWithSub('11111111-1111-1111-1111-111111111111'),
             httpClient: MockClient((request) async {
               if (request.method == 'GET' &&
                   request.url.path == '/api/gameplay/session01') {
@@ -150,6 +158,7 @@ void main() {
                     'activePlayerIndex': 0,
                     'players': [
                       {
+                        'accountId': '11111111-1111-1111-1111-111111111111',
                         'name': 'A',
                         'checkedCells': const [],
                         'jokerMarksRemaining': 8,
@@ -174,7 +183,14 @@ void main() {
                     'sessionId': 'session01',
                     'phase': 'PlayersResolving',
                     'activePlayerIndex': 0,
-                    'players': const [],
+                    'players': [
+                      {
+                        'accountId': '11111111-1111-1111-1111-111111111111',
+                        'name': 'A',
+                        'checkedCells': const [],
+                        'jokerMarksRemaining': 8,
+                      },
+                    ],
                     'board': const [],
                   }),
                   200,
@@ -200,8 +216,15 @@ void main() {
   });
 }
 
+String _jwtWithSub(String sub) {
+  final payload = base64Url.encode(utf8.encode(jsonEncode({'sub': sub})));
+  return 'header.$payload.signature';
+}
+
 class _TestGameController extends GameController {
-  _TestGameController(this._client);
+  _TestGameController(this._client) {
+    jwt = _client.jwt;
+  }
 
   final ApiClient _client;
 

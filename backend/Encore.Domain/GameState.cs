@@ -47,6 +47,7 @@ public class TurnEvent
 
 public class PlayerState
 {
+    public Guid AccountId { get; set; }
     public string Name { get; set; } = "Player";
     public HashSet<string> CheckedCells { get; set; } = [];
     public int JokerMarksRemaining { get; set; } = 8;
@@ -68,10 +69,9 @@ public class CellDef
     public bool Starred { get; set; }
 }
 
+public record GamePlayerSeed(Guid AccountId, string Name);
 public record DiceRoll(List<ColorDieFace> ColorDice, List<NumberDieFace> NumberDice);
 public record SelectedDice(ColorDieFace ColorDie, NumberDieFace NumberDie);
-
-public record StartGameRequest(List<string> PlayerNames);
 public record ActiveSelectionRequest(int PlayerIndex, ColorDieFace? ColorDie, NumberDieFace? NumberDie, bool Pass);
 public record PlayerActionRequest(int PlayerIndex, ColorDieFace? ColorDie, NumberDieFace? NumberDie, List<string>? CellIds, bool Pass);
 public record MoveRequest(int PlayerIndex, ColorDieFace ColorDie, NumberDieFace NumberDie, List<string> CellIds);

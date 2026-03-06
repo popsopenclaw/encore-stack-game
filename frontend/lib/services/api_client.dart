@@ -117,15 +117,6 @@ class ApiClient {
     return _decodeMap(r);
   }
 
-  Future<Map<String, dynamic>> startGame(List<String> playerNames) async {
-    final r = await _http.post(
-      _u('/api/gameplay/start'),
-      headers: _jsonHeaders,
-      body: jsonEncode({'playerNames': playerNames}),
-    );
-    return _decodeMap(r);
-  }
-
   Future<Map<String, dynamic>> getGame(String sessionId) async {
     final r = await _http.get(
       _u('/api/gameplay/$sessionId'),

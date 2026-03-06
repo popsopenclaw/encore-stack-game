@@ -17,7 +17,7 @@ void main() {
       final controller = _TestGameController(
         ApiClient(
           baseUrl: 'http://localhost:8080',
-          jwt: 't',
+          jwt: _jwtWithSub('11111111-1111-1111-1111-111111111111'),
           httpClient: MockClient((request) async {
             expect(request.url.path, '/api/gameplay/session01');
             return http.Response(
@@ -27,6 +27,7 @@ void main() {
                 'activePlayerIndex': 0,
                 'players': [
                   {
+                    'accountId': '11111111-1111-1111-1111-111111111111',
                     'name': 'A',
                     'checkedCells': const [],
                     'jokerMarksRemaining': 8,
@@ -48,16 +49,14 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: MatchHudPanel(controller: controller, onOpenTimeline: () {}),
-          ),
+          home: Scaffold(body: MatchHudPanel(controller: controller)),
         ),
       );
       await tester.pump();
 
       expect(tester.takeException(), isNull);
       expect(find.byType(DropdownButtonFormField<String>), findsNothing);
-      expect(find.text('Open Scores / Timeline'), findsOneWidget);
+      expect(find.text('Open Scores / Timeline'), findsNothing);
       expect(controller.availableColorDice, ['Orange', 'Blue']);
       expect(controller.availableNumberDice, ['Four', 'Two']);
 
@@ -72,8 +71,15 @@ void main() {
   );
 }
 
+String _jwtWithSub(String sub) {
+  final payload = base64Url.encode(utf8.encode(jsonEncode({'sub': sub})));
+  return 'header.$payload.signature';
+}
+
 class _TestGameController extends GameController {
-  _TestGameController(this._client);
+  _TestGameController(this._client) {
+    jwt = _client.jwt;
+  }
 
   final ApiClient _client;
 

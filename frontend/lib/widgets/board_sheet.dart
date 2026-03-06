@@ -7,6 +7,7 @@ class BoardSheet extends StatelessWidget {
   const BoardSheet({
     super.key,
     required this.board,
+    required this.checkedCellIds,
     required this.colorFor,
     required this.selectedCellIds,
     required this.onCellTap,
@@ -18,6 +19,7 @@ class BoardSheet extends StatelessWidget {
   });
 
   final List<Map<String, dynamic>> board;
+  final Set<String> checkedCellIds;
   final Color Function(String) colorFor;
   final Set<String> selectedCellIds;
   final void Function(String cellId) onCellTap;
@@ -61,6 +63,7 @@ class BoardSheet extends StatelessWidget {
                             Expanded(
                               child: BoardGrid(
                                 board: board,
+                                checkedCellIds: checkedCellIds,
                                 colorFor: colorFor,
                                 selectedCellIds: selectedCellIds,
                                 onCellTap: onCellTap,
@@ -80,6 +83,7 @@ class BoardSheet extends StatelessWidget {
                             Expanded(
                               child: BoardGrid(
                                 board: board,
+                                checkedCellIds: checkedCellIds,
                                 colorFor: colorFor,
                                 selectedCellIds: selectedCellIds,
                                 onCellTap: onCellTap,
@@ -333,6 +337,7 @@ class BoardGrid extends StatelessWidget {
   const BoardGrid({
     super.key,
     required this.board,
+    required this.checkedCellIds,
     required this.colorFor,
     required this.selectedCellIds,
     required this.onCellTap,
@@ -343,6 +348,7 @@ class BoardGrid extends StatelessWidget {
   });
 
   final List<Map<String, dynamic>> board;
+  final Set<String> checkedCellIds;
   final Color Function(String) colorFor;
   final Set<String> selectedCellIds;
   final void Function(String cellId) onCellTap;
@@ -410,6 +416,7 @@ class BoardGrid extends StatelessWidget {
                   final c = grid['${x}_$y'];
                   if (c == null) return const SizedBox(width: 30, height: 30);
                   final cellId = c['id'] as String;
+                  final isChecked = checkedCellIds.contains(cellId);
                   final isSelected = selectedCellIds.contains(cellId);
                   final isBlocked = blockedCellIds.contains(cellId);
                   final isTapEnabled = interactionEnabled && !isBlocked;
@@ -436,10 +443,10 @@ class BoardGrid extends StatelessWidget {
                           colors: [
                             colorFor(
                               (c['color'] as String),
-                            ).withValues(alpha: isTapEnabled ? 1 : 0.44),
+                            ).withValues(alpha: isChecked ? 1 : 0.94),
                             colorFor(
                               (c['color'] as String),
-                            ).withValues(alpha: isTapEnabled ? 0.78 : 0.34),
+                            ).withValues(alpha: isChecked ? 0.86 : 0.78),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(7),
@@ -447,6 +454,8 @@ class BoardGrid extends StatelessWidget {
                           color:
                               isSelected
                                   ? AppPalette.neonCyan
+                                  : isChecked
+                                  ? AppPalette.white
                                   : AppPalette.white.withValues(alpha: 0.32),
                           width: isSelected ? 2 : 1,
                         ),
@@ -457,10 +466,22 @@ class BoardGrid extends StatelessWidget {
                               blurRadius: 8,
                               spreadRadius: -2,
                             ),
+                          if (isChecked)
+                            const BoxShadow(
+                              color: AppPalette.neonBlue,
+                              blurRadius: 8,
+                              spreadRadius: -4,
+                            ),
                         ],
                       ),
                       child:
-                          (c['starred'] as bool)
+                          isSelected || isChecked
+                              ? const Icon(
+                                Icons.check_rounded,
+                                size: 16,
+                                color: AppPalette.white,
+                              )
+                              : (c['starred'] as bool)
                               ? const Icon(
                                 Icons.star,
                                 size: 16,

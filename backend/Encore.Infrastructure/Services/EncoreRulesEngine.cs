@@ -7,17 +7,24 @@ public class EncoreRulesEngine(BoardTemplateProvider templates) : IGameRulesEngi
     public string GameKey => "encore";
     private static readonly Random Rng = new();
 
-    public GameState NewGame(List<string> playerNames)
+    public GameState NewGame(List<GamePlayerSeed> players)
     {
         return new GameState
         {
-            Players = playerNames.Select(n => new PlayerState { Name = n }).ToList(),
+            Players = players.Select(p => new PlayerState
+            {
+                AccountId = p.AccountId,
+                Name = p.Name
+            }).ToList(),
             Board = BuildTemplateBoard(templates.GetEncoreTemplate()),
             ColumnPoints = BuildColumnPoints(),
             ColorCompletionPoints = BuildColorCompletionPoints(),
             Phase = TurnPhase.NeedRoll
         };
     }
+
+    public GameState NewGame(List<string> playerNames)
+        => NewGame(playerNames.Select(name => new GamePlayerSeed(Guid.Empty, name)).ToList());
 
     public void RollForTurn(GameState state)
     {

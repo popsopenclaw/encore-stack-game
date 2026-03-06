@@ -103,22 +103,24 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   GameAuditMatchInfo _buildMatchInfo() {
-    final resolverIdx = controller.currentResolvingPlayerIndex;
-    final resolver = controller.currentResolvingPlayer;
-    final resolverName =
-        resolver?['name']?.toString() ??
-        (resolverIdx == null ? '-' : 'P${resolverIdx + 1}');
-
     return GameAuditMatchInfo(
       sessionId: controller.sessionId,
       phase: controller.phase,
-      resolver: resolverName,
+      resolver: controller.turnPlayerName,
       openDraftTurnsRemaining: controller.openDraftTurnsRemaining,
       jokersRemaining: controller.currentResolvingPlayerJokers,
       endTriggered: controller.endTriggered,
       isFinished: controller.isFinished,
       status: controller.status,
     );
+  }
+
+  void _handleBack() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+      return;
+    }
+    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.home, (_) => false);
   }
 
   @override
@@ -143,6 +145,14 @@ class _GameScreenState extends State<GameScreen> {
 
         return AppShell(
           title: 'Game',
+          topBarContent:
+              controller.playersState.isEmpty
+                  ? null
+                  : _GameTopBar(
+                    controller: controller,
+                    onBack: _handleBack,
+                    onOpenTimeline: _openAuditPanel,
+                  ),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1420),
@@ -171,14 +181,16 @@ class _GameScreenState extends State<GameScreen> {
                       : LayoutBuilder(
                         builder: (context, constraints) {
                           final wide = constraints.maxWidth > 1150;
-                          final stackedBoardHeight =
-                              constraints.maxHeight.clamp(520.0, 760.0);
+                          final stackedBoardHeight = constraints.maxHeight
+                              .clamp(520.0, 760.0);
                           final boardPanel = CommonCard(
                             padding: const EdgeInsets.all(AppSpacing.sm),
                             child: BoardSheet(
                               board: board,
+                              checkedCellIds:
+                                  controller.displayedCheckedCellIds,
                               colorFor: AppPalette.fromGameColor,
-                              selectedCellIds: controller.selectedCellIds,
+                              selectedCellIds: controller.boardSelectedCellIds,
                               onCellTap: controller.toggleCellSelection,
                               interactionEnabled:
                                   controller.canInteractWithBoard,
@@ -186,11 +198,7 @@ class _GameScreenState extends State<GameScreen> {
                               blockedTapHintForCell:
                                   controller.hintForBlockedCellTap,
                               onBlockedTapHint: controller.showBoardHint,
-                              interactionHint:
-                                  controller.boardHintMessage ??
-                                  (!controller.canInteractWithBoard
-                                      ? 'Board interaction is enabled during Players Resolving.'
-                                      : controller.validationMessage),
+                              interactionHint: controller.boardInteractionHint,
                             ),
                           );
 
@@ -202,10 +210,7 @@ class _GameScreenState extends State<GameScreen> {
                                   child: boardPanel,
                                 ),
                                 const SizedBox(height: AppSpacing.sm),
-                                MatchHudPanel(
-                                  controller: controller,
-                                  onOpenTimeline: _openAuditPanel,
-                                ),
+                                MatchHudPanel(controller: controller),
                               ],
                             );
                           }
@@ -217,10 +222,7 @@ class _GameScreenState extends State<GameScreen> {
                               const SizedBox(width: AppSpacing.sm),
                               Expanded(
                                 flex: 4,
-                                child: MatchHudPanel(
-                                  controller: controller,
-                                  onOpenTimeline: _openAuditPanel,
-                                ),
+                                child: MatchHudPanel(controller: controller),
                               ),
                             ],
                           );
@@ -230,6 +232,84 @@ class _GameScreenState extends State<GameScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+class _GameTopBar extends StatelessWidget {
+  const _GameTopBar({
+    required this.controller,
+    required this.onBack,
+    required this.onOpenTimeline,
+  });
+
+  final GameController controller;
+  final VoidCallback onBack;
+  final VoidCallback onOpenTimeline;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        TextButton.icon(
+          onPressed: onBack,
+          icon: const Icon(Icons.chevron_left, color: AppPalette.textOnDark),
+          label: const Text(
+            'Game',
+            style: TextStyle(color: AppPalette.textOnDark),
+          ),
+        ),
+        Expanded(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 360),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    onPressed:
+                        controller.playersState.length > 1
+                            ? controller.selectPreviousBoard
+                            : null,
+                    icon: const Icon(
+                      Icons.chevron_left,
+                      color: AppPalette.textPrimary,
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      controller.selectedBoardPlayerName,
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppPalette.textPrimary,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed:
+                        controller.playersState.length > 1
+                            ? controller.selectNextBoard
+                            : null,
+                    icon: const Icon(
+                      Icons.chevron_right,
+                      color: AppPalette.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        IconButton(
+          onPressed: onOpenTimeline,
+          tooltip: 'Scores / Timeline',
+          icon: const Icon(Icons.timeline, color: AppPalette.textOnDark),
+        ),
+      ],
     );
   }
 }

@@ -224,11 +224,15 @@ public class LobbyUseCaseTests
 
     private class FakeGameRules : IGameRules
     {
-        public GameState NewGame(List<string> playerNames)
+        public GameState NewGame(List<GamePlayerSeed> players)
             => new()
             {
                 SessionId = Guid.NewGuid().ToString("N"),
-                Players = playerNames.Select(n => new PlayerState { Name = n }).ToList(),
+                Players = players.Select(p => new PlayerState
+                {
+                    AccountId = p.AccountId,
+                    Name = p.Name
+                }).ToList(),
                 Board = []
             };
 
@@ -239,7 +243,6 @@ public class LobbyUseCaseTests
         public void ResolvePlayerAction(GameState state, PlayerActionRequest request) { }
         public void EnableEncore(GameState state) { }
         public List<object> CalculateScores(GameState state) => [];
-        public void ApplyMoveDirect(GameState state, MoveRequest move) { }
     }
 
     private class FakeLobbyRepository : ILobbyRepository

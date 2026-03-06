@@ -9,12 +9,14 @@ class AppShell extends StatelessWidget {
     required this.title,
     required this.child,
     this.actions,
+    this.topBarContent,
     this.padding = AppSpacing.pagePadding,
   });
 
   final String title;
   final Widget child;
   final List<Widget>? actions;
+  final Widget? topBarContent;
   final EdgeInsetsGeometry padding;
 
   @override
@@ -26,7 +28,11 @@ class AppShell extends StatelessWidget {
           SafeArea(
             child: Column(
               children: [
-                _TopRail(title: title, actions: actions),
+                _TopRail(
+                  title: title,
+                  actions: actions,
+                  topBarContent: topBarContent,
+                ),
                 Expanded(child: Padding(padding: padding, child: child)),
               ],
             ),
@@ -38,10 +44,15 @@ class AppShell extends StatelessWidget {
 }
 
 class _TopRail extends StatelessWidget {
-  const _TopRail({required this.title, required this.actions});
+  const _TopRail({
+    required this.title,
+    required this.actions,
+    required this.topBarContent,
+  });
 
   final String title;
   final List<Widget>? actions;
+  final Widget? topBarContent;
 
   @override
   Widget build(BuildContext context) {
@@ -110,23 +121,34 @@ class _TopRail extends StatelessWidget {
             ),
             child: Row(
               children: [
-                if (canPop)
-                  const BackButton(color: AppPalette.textOnDark)
-                else
-                  const SizedBox(width: 40),
                 Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      color: AppPalette.textPrimary,
-                      fontSize: 21,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.6,
-                    ),
-                  ),
+                  child:
+                      topBarContent ??
+                      Row(
+                        children: [
+                          if (canPop)
+                            const BackButton(color: AppPalette.textOnDark)
+                          else
+                            const SizedBox(width: 40),
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: const TextStyle(
+                                color: AppPalette.textPrimary,
+                                fontSize: 21,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                          ),
+                          if (actions != null && actions!.isNotEmpty)
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: actions!,
+                            ),
+                        ],
+                      ),
                 ),
-                if (actions != null && actions!.isNotEmpty)
-                  Row(mainAxisSize: MainAxisSize.min, children: actions!),
               ],
             ),
           ),
